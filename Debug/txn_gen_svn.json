@@ -1,0 +1,16 @@
+{
+  "family_name": "private_intkey",
+  "family_version": 1.0,
+  "payload_encoding": "json",
+  "signer_priv_key": "admin_keys/client_private_key.hexstr",
+  "txn_payload": [
+    {
+      "Type": "private_ledger_administration",
+      "Action": "update_svn",
+      "Key": [
+        "0231eacee6877831deea3f2b7bf224ca2231fc2b86be04d72a15d5e88be46fd0a9"
+      ],
+      "new_svn": 0
+    }
+  ]
+}

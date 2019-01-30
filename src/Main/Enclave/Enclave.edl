@@ -1,0 +1,26 @@
+enclave {
+    
+	from "sgx_tsgxssl.edl" import *;
+	from "sgx_tkey_exchange.edl" import *;
+	from "sgx_tstdc.edl" import *;
+	
+	from "tp.edl" import *; // transaction processor ecalls and ocalls
+	from "client_reader.edl" import *; // client reader ecalls
+	from "server_sync.edl" import *; // server sync ecalls
+
+    include "sgx_key_exchange.h"
+    include "sgx_trts.h"
+
+    trusted {
+    
+    };
+
+    untrusted {
+      
+        void uprint(int level, [in, string] const char* str);
+		sgx_status_t read_key_from_file([in, string] const char* filename, [out,size=data_size] uint8_t* data, uint32_t data_size);
+   		sgx_status_t save_key_to_file([in, string] const char* filename, [in,size=data_size] uint8_t* data, uint32_t data_size);
+
+    };
+};
+

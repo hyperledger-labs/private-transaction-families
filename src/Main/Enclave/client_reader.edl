@@ -1,0 +1,13 @@
+enclave {
+    
+    trusted {
+
+      public uint64_t enclave_client_read([in, string] const char* input_buffer, [out] uint32_t* output_size);         
+      public int enclave_client_get_encrypted_data(uint64_t id, [out, size = output_size] char* output_buffer, uint32_t output_size);
+
+    };
+
+    untrusted {
+
+    };
+};
