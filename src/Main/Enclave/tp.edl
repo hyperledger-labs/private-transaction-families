@@ -1,0 +1,42 @@
+enclave {
+    
+    trusted {
+
+      public sgx_status_t secure_apply([in, size=header_size] const uint8_t* serialized_header, 
+                                        uint32_t header_size,
+                                        [in, string] const char* nonce,
+                                        [in, string] const char* signer_pub_key,
+                                        [in, size=64] const uint8_t* signature,
+                                        [in, size=64] const uint8_t* payload_hash,
+                                        [in, size=payload_size] const uint8_t* payload,
+                                        uint32_t payload_size);
+
+    };
+
+    untrusted {
+
+        int tl_call_stl_read([in, out] uint32_t* id,
+                             [in, size=70] const char* addr,
+                             [out, size=data_size] char* value, 
+                             uint32_t data_size);
+
+        int tl_call_stl_read_prefix([in, out] uint32_t* id,
+                                    [in, string] const char* addr_prefix,
+                                    [out, size=70, count=num_of_addr] char* value, 
+                                    uint32_t num_of_addr);
+
+        int tl_call_stl_read_cr([in, out] uint32_t* id, 
+                                [in, size=70] const char* addr, 
+                                [out, size=data_size] char* value, 
+                                uint32_t data_size);
+
+        sgx_status_t tl_call_stl_write([in, size=70] const char* addr,
+                                        [in, size=data_size] const char* value, 
+                                        size_t data_size);
+
+        sgx_status_t tl_call_stl_delete([in, size=70, count=num_of_address] const char* addresses, 
+                                        size_t num_of_address);
+
+    };
+};
+

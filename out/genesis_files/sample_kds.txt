@@ -1,0 +1,26 @@
+This is a list of KDS for using in tests, good for SVN 0 to 10.
+The KDS should be input to keys_creation executable (via command line parameter, or using the file in genesis_files folder)
+The appropriate public key for this SVN will be output to ~/.stl_key/ledger_public_data_key.hexstr
+
+KDS for Enclave SVN=10:
+123456789012345678901234567890123456789012345678901234567890abcd 
+KDS for Enclave SVN=9:
+645c58d70b0850a37a811da0905a43e33f1975155e5236e8ef7aaeae12fb3e3a 
+KDS for Enclave SVN=8:
+ec71bb113578c349a89570200979e94f0d145ac1ab1a32c0c67af82327cc5c0e 
+KDS for Enclave SVN=7:
+bec67f8a31dd538d69ff996dd7ee78989f0d438a40fdc1aa93143e94b48969cf 
+KDS for Enclave SVN=6:
+22a471ee416e96d8ea79ae501d51d82e6c1854456c16192d41d3383628ddc2d9 
+KDS for Enclave SVN=5:
+13f14ebfe3b4548e09aa79c256db04cdc0b93b403256f384d8ca7bb518f14e8a 
+KDS for Enclave SVN=4:
+4ee597b599b93826b7a0087eddc6432281429c9c5f069fe6ac4c9da7204faa60 
+KDS for Enclave SVN=3:
+b703146ba366e20c23824fd02de923565c240817630813171d6f051071c06998 
+KDS for Enclave SVN=2:
+171c980c6045047271902619386a8abecdaf8ac721f7d46183344fe99572f52f 
+KDS for enclave SVN=1:
+4ad04cb27627afc31c7cb34ad3e484adebf7467ab97c87196f111492ca9df06f 
+KDS for Enclave SVN=0:
+b3b15edc510bdc41016bbc62bbe1c44c70bf638ae12a43e1a38d99059a4cdd24 

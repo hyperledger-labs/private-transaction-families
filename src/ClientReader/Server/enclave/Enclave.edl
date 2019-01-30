@@ -1,0 +1,26 @@
+enclave {
+
+	from "sgx_tsgxssl.edl" import *;
+	from "sgx_tstdc.edl" import *;
+
+    include "sgx_trts.h"
+
+    trusted {
+											
+		public uint64_t enclave_client_read([in, string] const char* input_buffer, [out] uint32_t* output_size);
+									   
+		public int enclave_client_get_encrypted_data(uint64_t id, [out, size = output_size] char* output_buffer, uint32_t output_size);
+		
+		// todo - for debug, remove later, implemented in tmemory_leaks.cpp
+		public void enable_mem_debug();
+		public void print_mem_leaks();
+        
+    };
+
+    untrusted {
+		sgx_status_t read_key_from_file([in, string] const char* filename, [out,size=data_size] uint8_t* data, uint32_t data_size);
+		
+		void uprint(int level, [in, string] const char* str);
+    };
+};
+

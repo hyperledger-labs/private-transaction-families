@@ -1,0 +1,10 @@
+{
+  "family_name": "private_intkey",
+  "family_version": 1.0,
+  "payload_encoding": "json",
+  "signer_priv_key": "client1_keys/client_private_key.hexstr",
+  "txn_payload":[
+    {"Verb": "set", "Name": "Test", "Value": 54321, "Size": 100, "Prefix": "bb563a905f1957a0dd5fbf218d5d402d303ece"},
+    {"Verb": "inc", "Name": "Test", "Value": 2, "Prefix": "bb563a905f1957a0dd5fbf218d5d402d303ece"}
+  ]
+}

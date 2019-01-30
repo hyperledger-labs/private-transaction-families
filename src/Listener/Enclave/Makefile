@@ -1,0 +1,102 @@
+######## SGX SDK Settings ########
+SGX_MODE ?= HW
+SGX_ARCH ?= x64
+
+ifeq ($(shell getconf LONG_BIT), 32)
+	SGX_ARCH := x86
+else ifeq ($(findstring -m32, $(CXXFLAGS)), -m32)
+	SGX_ARCH := x86
+endif
+
+ifeq ($(SGX_ARCH), x86)
+	$(error x86 build is not supported, only x64!!)
+else
+	SGX_COMMON_CFLAGS := -m64 -DSGX_ENCLAVE
+	SGX_LIBRARY_PATH := $(SGX_SDK)/lib64
+	SGX_ENCLAVE_SIGNER := $(SGX_SDK)/bin/x64/sgx_sign
+	SGX_EDGER8R := $(SGX_SDK)/bin/x64/sgx_edger8r
+endif
+
+ifeq ($(SGX_DEBUG), 1)
+ifeq ($(SGX_PRERELEASE), 1)
+$(error Cannot set SGX_DEBUG and SGX_PRERELEASE at the same time!!)
+endif
+endif
+
+ifeq ($(SGX_DEBUG), 1)
+    SGX_COMMON_CFLAGS += -O0 -g -DDEBUG
+else
+    SGX_COMMON_CFLAGS += -O2 -D_FORTIFY_SOURCE=2
+endif
+
+ifneq ($(SGX_MODE), HW)
+	Trts_Library_Name := sgx_trts_sim
+	Service_Library_Name := sgx_tservice_sim
+else
+	Trts_Library_Name := sgx_trts
+	Service_Library_Name := sgx_tservice
+endif
+
+ifeq ($(SGX_MODE), HW)
+ifneq ($(SGX_DEBUG), 1)
+ifneq ($(SGX_PRERELEASE), 1)
+Build_Mode = HW_RELEASE
+endif
+endif
+endif
+
+######## Enclave Settings ########
+
+Protected_Ledger_Root := ../..
+Acl_Dir := $(Protected_Ledger_Root)/AccessControlLogic
+Common_Dir := $(Protected_Ledger_Root)/Common
+Bl_Dir := $(Protected_Ledger_Root)/BusinessLogic
+Crypto_Dir := $(Protected_Ledger_Root)/CryptoLib
+SgxSsl_Dir := $(Crypto_Dir)/sgxssl
+Lib_Dir := $(Protected_Ledger_Root)/lib
+Main_Dir := $(Protected_Ledger_Root)/Main
+
+Enclave_C_Files := $(wildcard *.c) 
+Enclave_CPP_Files := $(wildcard *.cpp) 
+
+Enclave_C_Objects := $(Enclave_C_Files:.c=.o)
+Enclave_C_Objects +=  $(Enclave_CPP_Files:.cpp=.o)
+
+Enclave_Include_Paths := -I. -I$(Common_Dir) -I$(Main_Dir)/Enclave -I$(Acl_Dir) -I$(Bl_Dir) -I$(Crypto_Dir) -I$(SgxSsl_Dir)/include \
+-I$(SGX_SDK)/include -I$(SGX_SDK)/include/libcxx -I$(SGX_SDK)/include/tlibc
+
+
+Enclave_Common_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fpic -fpie -fstack-protector -fno-builtin-printf -Wall -Wformat -Wformat-security -Werror $(Enclave_Include_Paths)
+
+ifneq ($(SGX_DEBUG), 1)
+Enclave_Common_Flags += -fvisibility=hidden
+endif
+
+Enclave_C_Flags := $(Enclave_Common_Flags) -Wno-implicit-function-declaration -std=c11
+Enclave_CXX_Flags := $(Enclave_Common_Flags) -std=c++11 -nostdinc++
+
+
+.PHONY: all
+
+all: liblistener_t.a
+
+$(Main_Dir)/Enclave/Enclave_t.h: 
+	$(MAKE) -C $(Main_Dir)/Enclave -f generate_edge_files_t.mk 
+
+%.o: %.cpp
+	@$(CXX) $(Enclave_CXX_Flags) -c $< -o $@
+	@echo "$(CXX)  <=  $<"
+
+%.o: %.c
+	@$(CC) $(Enclave_C_Flags) -c $< -o $@
+	@echo "$(CC)  <=  $<"
+
+
+liblistener_t.a: $(Main_Dir)/Enclave/Enclave_t.h $(Enclave_C_Objects)
+	ar rcs liblistener_t.a $(Enclave_C_Objects)
+	@echo "ar =>  $@"
+
+.PHONY: clean
+
+clean:
+	@rm -f liblistener_t.a $(Enclave_C_Objects)

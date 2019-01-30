@@ -1,0 +1,82 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) UnitTest ACL",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Test/build/AccessControlLogicTest/TEST_ACL",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) UnitTest Listener",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Test/build/ListenerTest/TEST_LISTENER",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        { 
+            "name": "(gdb) Attach TP",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "${workspaceFolder}/out/private-tp",
+            "processId": "${command:pickProcess}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/home/yoni/Downloads/sgxsdk/bin/sgx-gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        { 
+            "name": "(gdb) launch TP",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/out/private-tp",
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/out",
+            "environment": [],
+            "args": ["-C", "tcp://127.0.0.1:4004"],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/home/yoni/Downloads/sgxsdk/bin/sgx-gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

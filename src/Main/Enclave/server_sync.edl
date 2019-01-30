@@ -1,0 +1,37 @@
+
+enclave {
+
+    trusted {
+
+		/* genesis phase */
+		public sgx_status_t seal_ledger_keys([in, string] char* kds_str, [in, string] char* kds_sig_str);
+		public uint32_t set_ias_data([in, string] char* cert_str, [in, string] char* key_str, [in, string] char* spid_str);
+
+		/* keys client side */
+		public sgx_status_t decrypt_and_seal_ledger_keys(sgx_ra_context_t context,
+														[in, size = blob_size] uint8_t* p_aes_key_blob,
+														uint32_t blob_size,
+                            				            [in] const sgx_aes_gcm_128bit_tag_t* p_aes_gcm_mac);
+		public sgx_status_t enclave_init_ra([out] sgx_ra_context_t *p_context, [in] sgx_ec256_public_t* p_sp_pub_key);
+        public sgx_status_t enclave_ra_close(sgx_ra_context_t context);
+
+        /* keys server side */
+        public int enclave_msg1_phase1(uint32_t ias_socket,
+									   [in] const sgx_ra_msg1_t *p_msg1,
+									   [out] uint64_t* p_session_id,
+									   [out] size_t* output_buffer_size);
+		public int enclave_msg1_phase2([in] const sgx_ra_msg1_t *p_msg1,
+									   uint64_t session_id,
+									   [out, size = output_size] char* output_buffer, size_t output_size);
+		public int enclave_msg3([in, size = input_size] const char* input_buffer, size_t input_size,
+								uint64_t session_id,
+								[out, size = output_size] char* output_buffer, size_t output_size);
+		public void cleanup_session(uint64_t session_id);
+
+    };
+
+    untrusted {
+
+    };
+};
+

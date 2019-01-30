@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "/config_schema.json",
+  "title": "Config Schema",
+  "description": "Sawtooth transaction processor generator configuration schema",
+  "type": "object",
+  "properties": {
+    "family_name": {
+      "description": "family name for the transaction processor",
+      "type": "string"
+    },
+    "family_version": {
+      "description": "version of the transaction processor, must be grater than 0",
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMinimum": true
+    },
+    "payload_encoding": {
+      "description": "how transaction payload will be encoded, only cbor or json are valid",
+      "type": "string",
+      "enum": [
+        "cbor",
+        "json"
+      ]
+    },
+    "signer_priv_key": {
+      "description": "path to file containing the signer private key in hex format, if missing a random key will be generated",
+      "type": "string"
+    },
+    "txn_payload": {
+      "description": "array of transactions payload in json format, must have at least one, each item should match payload_schema",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#definitions/payload"
+          },
+          {
+            "$ref": "#definitions/acl_payload"
+          }
+        ]
+      },
+      "uniqueItems": false
+    }
+  },
+  "required": [
+    "family_name",
+    "family_version",
+    "payload_encoding",
+    "txn_payload"
+  ],
+  "definitions": {
+    "payload": {
+      "type": "object",
+      "properties": {
+        "Verb": {
+          "description": "action to be taken, only accept 'set', 'inc' or 'dec'",
+          "type": "string",
+          "enum": [
+            "set",
+            "inc",
+            "dec"
+          ]
+        },
+        "Value": {
+          "description": "value for the key, must be grater than 0",
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMinimum": true
+        },
+        "Name": {
+          "description": "key name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Verb",
+        "Name",
+        "Value"
+      ]
+    },
+    "acl_payload": {
+      "type": "object",
+      "properties": {
+        "Type": {
+          "description": "used to detect this type of transaction, must be private_ledger_administration",
+          "type": "string",
+          "enum": [
+            "private_ledger_administration"
+          ]
+        },
+        "Action": {
+          "description": "action to be taken",
+          "type": "string",
+          "enum": [
+            "add_member",
+            "add_group",
+            "remove_member",
+            "remove_group",
+            "add_access",
+            "remove_access",
+            "add_to_group",
+            "remove_from_group",
+            "change_member_key",
+            "update_svn"
+          ]
+        },
+        "Key": {
+          "description": "public key for member, group id for group",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "Address": {
+          "description": "(optional) array of address prefix (not including first 6 characters of family name) to assign to members or groups, prefix of 62 zeroes is allready reserved",
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "Group": {
+          "description": "(optional) group that this member should belong to, group name must be added first with add_group txn",
+          "type": "string"
+        },
+        "new_svn": {
+          "description": "(optional) new svn for update svn transaction",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "Type",
+        "Action",
+        "Key"
+      ]
+    }
+  }
+}
