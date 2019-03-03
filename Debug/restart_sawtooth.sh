@@ -38,3 +38,8 @@ gnome-terminal \
 --tab -e "bash -c \"sudo sawtooth-rest-api $verb; exec bash\"" \
 --tab -e "bash -c \"sudo -u sawtooth $consensus -C tcp://127.0.0.1:5050 $verb; exec bash\"";
 
+echo '------------------------------------'
+echo 'start private-tp'
+echo '------------------------------------'
+sleep 1s;
+gnome-terminal --tab -e "bash -c \"source /opt/intel/sgxsdk/environment ; cd ../out; ./private-tp $verb; exec bash\""

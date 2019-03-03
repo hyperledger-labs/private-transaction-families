@@ -48,11 +48,12 @@ SDK (Note: newer versions should be supported).
       sgx_linux_x64_driver_<version>.bin and sgx_linux_x64_sdk_<version>.bin
    - Add permissions: `$ sudo chmod u+x ./sgx_linux_x64_sdk_<version>.bin`
    - Install the SDK: `$ sudo ./sgx_linux_x64_sdk_<version>.bin`
+     do not install on current directory, install the sdk under /opt/intel
      Note the instructions to set the environment variable after SDK 
      installation is complete.
    - Set Intel® SGX source environment by default:
      Edit the file .bashrc (hidden file in the home folder) and add the SGX SDK
-     folder at the end of the file: "source <sgx sdk install path>/environment" 
+     folder at the end of the file: "source /opt/intel/sgxsdk/environment"
      where <sgx sdk install path> is the path to where SDK was installed
 
 2. If you are using an Intel® SGX supported platform (required for hardware mode), 
