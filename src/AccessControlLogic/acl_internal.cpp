@@ -315,6 +315,12 @@ bool InternalState::ReadFromAddressPrefix(const secure::string &addr, secure::ve
 		out_values = secure::vector<StlAddress>();
 		return true;
 	}
+	if (ret * ADDRESS_LENGTH > MAX_DATA_LEN)
+	{
+		PRINT(ERROR, ACL_LOG, "read from sawtooth by prefix failure, data size of %d is too big\n", ret);
+		return false;
+	}
+
 	uint32_t data_size = ret;
 	value.reserve(data_size * ADDRESS_LENGTH);
 	tl_call_stl_read_prefix(&ret, &id, addr.c_str(), value.data(), data_size);
@@ -355,6 +361,11 @@ bool InternalState::ReadFromAddress(const StlAddress &addr, secure::vector<uint8
 	if (ret == -1)
 	{
 		PRINT(ERROR, ACL_LOG, "read from sawtooth failure, couldn't get data size\n");
+		return false;
+	}
+	if (ret > MAX_DATA_LEN)
+	{
+		PRINT(ERROR, ACL_LOG, "read from sawtooth failure, data size of %d is too big\n", ret);
 		return false;
 	}
 	if (ret == 0)
