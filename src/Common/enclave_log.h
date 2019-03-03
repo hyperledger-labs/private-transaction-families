@@ -36,10 +36,10 @@ extern __thread char print_buf[BUFFER_SIZE];
 #if defined DEBUG && !defined PERFORMANCE
 
 #define PRINT(level, source, format, ...) { \
-	if (level == ERROR) \
+	if (level == ERROR || level == INFO) \
 		snprintf(print_buf, BUFFER_SIZE, "(%s %s) [%s:%d]: " format, source, __FUNCTION__, __FILE__, __LINE__, ##__VA_ARGS__); \
 	else \
-		snprintf(print_buf, BUFFER_SIZE, format "%c", ##__VA_ARGS__, '\0'); \
+		snprintf(print_buf, BUFFER_SIZE, format "%c", ##__VA_ARGS__, '\0');	\
 	uprint(level, (const char*)print_buf); \
 }
 

@@ -31,7 +31,7 @@
 #define NONE    ""
 
 #define ERROR 1 // prints to stderr, also in release mode, includes time, filename and line
-#define INFO  2 // prints to stdout, only in debug mode, includes time
+#define INFO  2 // prints to stdout, only in debug mode, includes time, filename and line
 #define PLAIN 3 // prints to stdout, only in debug mode, no time
 
 #endif // _LOG_DEFINES_H_

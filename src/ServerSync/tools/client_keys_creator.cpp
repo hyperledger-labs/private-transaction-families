@@ -26,6 +26,8 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 	
+	init_log();
+
 	do {
 		// create a new key
 		if (create_new_ec_key_pair(&ec_key) == false)

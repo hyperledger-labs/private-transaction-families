@@ -158,6 +158,8 @@ int main(int argc, char* argv[])
 	uint16_t proxy_port = 0;
 	bool use_proxy = false;
 	
+	init_log();
+
 	// todo - check all of possible inputs
 	switch (argc)
 	{
@@ -226,7 +228,7 @@ int main(int argc, char* argv[])
 			print_usage(argv[0]);
 			return 1;
 	}
-	
+
 	if (load_enclave(&eid) != 0)
 	{
 		PRINT(ERROR, MAIN, "load_enclave failed\n");

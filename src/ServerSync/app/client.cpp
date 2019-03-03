@@ -307,7 +307,9 @@ int main(int argc, char* argv[])
 	const char* proxy_url = NULL;
 	uint16_t proxy_port = 0;
 	bool use_proxy = false;
-
+	
+	init_log();
+	
 	switch (argc)
 	{
 		case 2:
@@ -380,15 +382,14 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 	}
-	
+
 	retval = client_get_keys(eid, server_url, server_port);	
 	
 	status = sgx_destroy_enclave(eid);
 	if (status != SGX_SUCCESS)
 		PRINT(ERROR, MAIN, "sgx_destroy_enclave error 0x%x\n", status);
 
-	PRINT(INFO, MAIN, "click enter to exit\n");
-	getchar();
+	PRINT(INFO, MAIN, "Done\n");
 
 	return retval;
 }

@@ -13,7 +13,7 @@ Crypto_Dir := $(Protected_Ledger_Root)/CryptoLib
 Main_Dir := $(Protected_Ledger_Root)/Main
 
 App_C_Files := memset_s.c
-App_CPP_Files := common_ocalls.cpp safe_copy.cpp config.cpp
+App_CPP_Files := common_ocalls.cpp safe_copy.cpp config.cpp app_log.cpp
 
 App_Objects := $(App_C_Files:.c=.o) $(App_CPP_Files:.cpp=.o)
 

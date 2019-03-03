@@ -17,9 +17,9 @@ Libraries_Dir := $(Protected_Ledger_Root)/lib
 
 Common_C_Files := $(Common_Dir)/memset_s.c
 
-Signer_CPP_Files := $(Common_Dir)/safe_copy.cpp kds_signer.cpp
-Calc_CPP_Files := $(Common_Dir)/safe_copy.cpp ../common/parse_string.cpp kds_calculator.cpp
-Creator_CPP_Files := $(Common_Dir)/safe_copy.cpp client_keys_creator.cpp
+Signer_CPP_Files := $(Common_Dir)/safe_copy.cpp $(Common_Dir)/app_log.cpp kds_signer.cpp
+Calc_CPP_Files := $(Common_Dir)/safe_copy.cpp $(Common_Dir)/app_log.cpp ../common/parse_string.cpp kds_calculator.cpp
+Creator_CPP_Files := $(Common_Dir)/safe_copy.cpp $(Common_Dir)/app_log.cpp client_keys_creator.cpp
 
 Signer_C_Objects := $(Common_C_Files:.c=.o) $(Signer_CPP_Files:.cpp=.o)
 Calc_C_Objects := $(Common_C_Files:.c=.o) $(Calc_CPP_Files:.cpp=.o)
@@ -39,7 +39,7 @@ else
 endif
 OpenSsl_Link_Files := -L$(Crypto_Dir)/openssl/lib -l$(OPENSSL_CRYPTO_LIB)
 
-App_Link_Flags := $(COMMON_CFLAGS) $(Security_Link_Flags) -L$(Libraries_Dir)/$(Binary_Folder) -lstl_crypto_u $(OpenSsl_Link_Files) -lpthread
+App_Link_Flags := $(COMMON_CFLAGS) $(Security_Link_Flags) -L$(Libraries_Dir)/$(Binary_Folder) -lstl_crypto_u $(OpenSsl_Link_Files) -lpthread -llog4cxx
 
 .PHONY: all run
 

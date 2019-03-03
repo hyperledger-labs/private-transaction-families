@@ -148,16 +148,19 @@ void uprint(int level, const char* str)
 {	
 	if (level == ERROR)
 	{
-		PRINT_TIME(stderr);
-		fputs(str, stderr);
+		LOG4CXX_ERROR(logger, str);
+		// PRINT_TIME(stderr);
+		// fputs(str, stderr);
 	}
 	else if (level == INFO)
 	{
-		PRINT_TIME(stdout);
-		fputs(str, stdout);
+		LOG4CXX_DEBUG(logger, str);
+		// PRINT_TIME(stdout);
+		// fputs(str, stdout);
 	}
 	else // PLAIN
 	{
+		// LOG4CXX_DEBUG(logger, str);
 		fputs(str, stdout);
 	}
 }

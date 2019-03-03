@@ -274,7 +274,9 @@ int main(int argc, char* argv[])
 	char kds_str[KDF32_HEX_KEY_LEN + 1] = {};
 	char kds_sig_str[ECDSA_SIG_HEX_LEN + 1] = {};
 	int retval = 1;
-		
+	
+	init_log();
+	
 	if (argc == 1)
 	{
 		PRINT(INFO, MAIN, "no input kds, using kds from file\n");
@@ -334,6 +336,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
+
 	if (load_enclave(&eid) != 0)
 	{
 		PRINT(ERROR, MAIN, "load_enclave failed\n");

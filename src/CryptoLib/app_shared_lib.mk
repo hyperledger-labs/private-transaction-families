@@ -24,7 +24,7 @@ OpenSsl_Dir := $(Crypto_Dir)/openssl
 
 
 
-Crypto_CPP_Files := $(Common_Dir)/safe_copy.cpp crypto.cpp crypto_aes.cpp crypto_ecdsa.cpp crypto_hash.cpp crypto_kdf.cpp crypto_files.cpp crypto_ledger_reader_writer.cpp crypto_stl_reader_writer_python_wrapper.cpp
+Crypto_CPP_Files := $(Common_Dir)/safe_copy.cpp $(Common_Dir)/app_log.cpp crypto.cpp crypto_aes.cpp crypto_ecdsa.cpp crypto_hash.cpp crypto_kdf.cpp crypto_files.cpp crypto_ledger_reader_writer.cpp crypto_stl_reader_writer_python_wrapper.cpp
 Crypto_C_Files := $(Common_Dir)/memset_s.c
 Crypto_C_Objects := $(Crypto_C_Files:.c=.o) $(Crypto_CPP_Files:.cpp=.o)
 
@@ -36,7 +36,7 @@ App_Common_Flags := $(COMMON_CFLAGS) -shared -fPIE -fPIC -fstack-protector -Wfor
 
 App_C_Flags := $(App_Common_Flags) -Wno-implicit-function-declaration -std=c11 -shared
 
-OpenSsl_Link_Files := -L$(OpenSsl_Dir)/lib -lcrypto
+OpenSsl_Link_Files := -L$(OpenSsl_Dir)/lib -lcrypto -llog4cxx
 
 App_CXX_Flags := $(App_Common_Flags) -std=c++11 
 

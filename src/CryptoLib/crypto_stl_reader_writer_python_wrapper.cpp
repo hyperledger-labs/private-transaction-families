@@ -14,8 +14,9 @@
 * limitations under the License.
 */
  
- #include "crypto_stl_reader_writer_python_wrapper.h"
+#include "crypto_stl_reader_writer_python_wrapper.h"
 #include "crypto_ledger_reader_writer.h"
+#include "app_log.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -25,6 +26,7 @@
 
 bool encrypt_data(const uint8_t *data, size_t size, uint16_t svn, char **res, const char* p_client_public_key_str, const char *keys_path)
 {
+	init_log();
 	ledger_hex_address_t address = {};
 	memset_s(address, sizeof(ledger_hex_address_t)-1,'0',sizeof(ledger_hex_address_t)-1);
 	address[sizeof(ledger_hex_address_t)-1] = '\0';
@@ -47,6 +49,7 @@ bool encrypt_data(const uint8_t *data, size_t size, uint16_t svn, char **res, co
 
 bool encrypt_address(char *address, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path)
 {
+	init_log();
 	Ledger_Reader_Writer rw;
 
 	rw.set_svn(svn);
@@ -79,6 +82,7 @@ bool encrypt_address(char *address, uint16_t svn, uint64_t &nonce, uint8_t *secr
 
 char* decrypt_data(const char *input_data, uint16_t svn, uint64_t nonce, uint8_t *secret, secure_data_content_t **out, size_t *data_size, const char *keys_path)
 {
+	init_log();
 	public_ec_key_str_t client_pub_key_str = {0};
 
 	Ledger_Reader_Writer rw(nonce, (dh_shared_secret_t *)secret);
@@ -102,6 +106,7 @@ char* decrypt_data(const char *input_data, uint16_t svn, uint64_t nonce, uint8_t
 
 bool free_mem_response(secure_data_content_t **response_str)
 {
+	init_log();
 	// allocated in Ledger_Reader_Writer.encode_secure_data
 	if (*response_str != NULL)
 	{
@@ -114,6 +119,7 @@ bool free_mem_response(secure_data_content_t **response_str)
 
 bool free_mem_request(char **request_str)
 {
+	init_log();
 	// allocated in Ledger_Reader_Writer.encode_secure_data
 	if (*request_str != NULL)
 	{
