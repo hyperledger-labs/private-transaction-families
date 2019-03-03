@@ -187,6 +187,16 @@ int server_listener(uint16_t port, uint32_t iterations)
 	server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //localhost only
 	server_addr.sin_port = htons(port);
 
+	// set SO_REUSEPORT so will be able to run multiple instances of private-tp together
+	int reuse = 1;
+	ret = setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(int));
+	if (ret < 0)
+	{
+		close(sockfd);
+		PRINT(ERROR, SERVER, "setsockopt(SO_REUSEPORT) failed with error: %d", errno);
+		return ret;
+	}
+
 	ret = bind(sockfd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_in));
 	if (ret < 0)
 	{
