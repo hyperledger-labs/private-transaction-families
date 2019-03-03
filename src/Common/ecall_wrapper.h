@@ -21,7 +21,7 @@
 #include "Enclave_u.h"
 
 template<typename FUNCTION, typename... ARGS>
-auto ecall_wrapper(FUNCTION&& func, ARGS&&... args) -> decltype(func(std::forward<ARGS>(args)...))
+sgx_status_t ecall_wrapper(FUNCTION&& func, ARGS&&... args)
 {
     sgx_status_t status = SGX_ERROR_UNEXPECTED;
     while (status != SGX_SUCCESS)
