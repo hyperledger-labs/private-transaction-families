@@ -36,28 +36,6 @@ namespace txn_handler
 
 sawtooth::GlobalStateUPtr contextPtr;
 
-// utility function to provide copy conversion from stl string container
-// that contains hex as string, to a vector of bytes.
-std::vector<uint8_t> ToHexVector(const std::string &in)
-{
-    unsigned int str_size = in.length();
-    for (unsigned int i = 0; i < str_size; i++)
-    {
-        if (!isxdigit(in[i]))
-        {
-            PRINT(ERROR, LISTENER, "ToHexVector accepts only hex characters\n");
-            return std::vector<uint8_t>();
-        }
-    }
-    std::vector<uint8_t> out;
-    out.reserve(str_size / 2);
-    for (unsigned int i = 0; i < str_size; i += 2)
-    {
-        out.push_back(0xff & std::stoi(in.substr(i, 2), nullptr, 16));
-    }
-    return out;
-}
-
 //---------------------------------------------------------
 // PrivateApplicator
 //---------------------------------------------------------
@@ -72,26 +50,33 @@ void PrivateApplicator::Apply()
     contextPtr = std::move(this->state);
 
     // get transaction details
-    auto serialized_header = this->txn->header()->GetSerializedHeader();
-    auto nonce = this->txn->header()->GetValue(sawtooth::TransactionHeaderField::TransactionHeaderNonce);
-    auto pub_key = this->txn->header()->GetValue(sawtooth::TransactionHeaderField::TransactionHeaderSignerPublicKey);
-    auto payload_hash = this->txn->header()->GetValue(sawtooth::TransactionHeaderField::TransactionHeaderPayloadSha512);
+    auto serialized_header = this->txn->header_bytes();
+    // parse header
+    TransactionHeader txn_header;
+    if (!txn_header.ParseFromString(serialized_header))
+    {
+        throw sawtooth::InvalidTransaction("failed to parse txn header bytes");
+    }
+    auto nonce = txn_header.nonce();
+    auto pub_key = txn_header.signer_public_key();
+    auto payload_hash = txn_header.payload_sha512();
     auto signature = this->txn->signature();
     auto payload = this->txn->payload();
     
+
     std::vector<uint8_t> header_vec(serialized_header.begin(), serialized_header.end());
-    std::vector<uint8_t> signature_vec = ToHexVector(signature);
-    std::vector<uint8_t> payload_hash_vec = ToHexVector(payload_hash);
+    // std::vector<uint8_t> signature_vec = ToHexVector(signature);
+    // std::vector<uint8_t> payload_hash_vec = ToHexVector(payload_hash);
     std::vector<uint8_t> payload_vec(payload.begin(), payload.end());
     if (pub_key.size() != PUB_KEY_BYTE_LENGTH * 2 && pub_key.size() != UNCOMPRESSED_PUB_KEY_BYTE_LENGTH * 2)
     {
         throw sawtooth::InvalidTransaction(" signer public key size is not 33 or 67 bytes");
     }
-    if (signature_vec.size() != 64)
+    if (signature.size() != 128)
     {
         throw sawtooth::InvalidTransaction(" signature size is not 64 bytes");
     }
-    if (payload_hash_vec.size() != 64)
+    if (payload_hash.size() != 128)
     {
         throw sawtooth::InvalidTransaction(" payload hash size is not 64 bytes");
     }
@@ -101,8 +86,8 @@ void PrivateApplicator::Apply()
                                      header_vec.size(),
                                      nonce.c_str(),
                                      pub_key.c_str(),
-                                     signature_vec.data(),
-                                     payload_hash_vec.data(),
+                                     signature.c_str(),
+                                     payload_hash.c_str(),
                                      payload_vec.data(),
                                      payload_vec.size()) ||
         SGX_SUCCESS != ret_val)

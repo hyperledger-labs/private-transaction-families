@@ -91,12 +91,7 @@ bool extract_params_json(const secure::string &payload,
         for (const auto k : keys_arr)
         {
             auto key_str = k.get<secure::string>();
-            if (key_str.size() != PUB_KEY_LENGTH - 1)
-            {
-                PRINT(ERROR, LOGIC, "key %s is invalid, expected key of size %d\n",
-                      key_str.c_str(), PUB_KEY_LENGTH - 1);
-                return false;
-            }
+
             // copy key string to SignerPubKey and push it to keys vec
             auto key_res = getKeyFromStr(key_str);
             if (!key_res.first)

@@ -195,70 +195,53 @@ bool DoSet(const secure::string &name, const int value, const int addr_len, cons
 bool DoIncDec(const secure::string &name, const int value, const secure::string &prefix, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)
 {
     PRINT(INFO, LOGIC, "IntKeyApplicator::DoInc/Dec Name: %s Value: %d \n", name.c_str(), value);
-    secure::vector<StlAddress> addresses;
-    if (!acl::acl_read_prefix(prefix, signerPubKey, addresses, svn))
+    StlAddress addr;
+    try
     {
-        PRINT(ERROR, LOGIC, "acl read prefix returened failure\n");
+        addr = getAddress(name, prefix, signerPubKey);
+    }
+    catch (...)
+    {
         return false;
     }
-    if (addresses.empty())
+    secure::vector<uint8_t> state_value;
+    if (!acl::acl_read(addr, signerPubKey, state_value, svn))
     {
-        PRINT(INFO, LOGIC, " acl read prefix returned empty vector\n");
+        PRINT(ERROR, LOGIC, "acl read returened failure\n");
         return false;
     }
-    if (!acl::acl_delete(addresses, signerPubKey, svn))
+    if (state_value.size() == 0)
     {
-        PRINT(INFO, LOGIC, "acl delte failed\n");
+        PRINT(INFO, LOGIC, " Verb was 'Inc/Dec', but address not found\n");
         return false;
     }
-    return true;
-    // StlAddress addr;
-    // try
-    // {
-    //     addr = getAddress(name, prefix, signerPubKey);
-    // }
-    // catch (...)
-    // {
-    //     return false;
-    // }
-    // secure::vector<uint8_t> state_value;
-    // if (!acl::acl_read(addr, signerPubKey, state_value, svn))
-    // {
-    //     PRINT(ERROR, LOGIC, "acl read returened failure\n");
-    //     return false;
-    // }
-    // if (state_value.size() == 0)
-    // {
-    //     PRINT(INFO, LOGIC, " Verb was 'Inc/Dec', but address not found\n");
-    //     return false;
-    // }
-    // // not empty address
-    // try
-    // {
-    //     auto json = nlohmann::json::from_cbor(state_value);
-    //     if (json.find(name.c_str()) == json.end())
-    //     {
-    //         PRINT(INFO, LOGIC, "Verb was 'Inc/Dec', but value does not exists\n");
-    //         return false;
-    //     }
-    //     auto val = json[name.c_str()].get<int>();
-    //     val += value;
-    //     json[name.c_str()] = val;
-    //     auto cbor = nlohmann::json::to_cbor(json);
-    //     secure::vector<uint8_t> secure_cbor(std::begin(cbor), std::end(cbor));
-    //     if (FAILED(acl::acl_write(addr, signerPubKey, secure_cbor, svn, nonce)))
-    //     {
-    //         PRINT(INFO, LOGIC, "Write to addr %s failed\n", addr.val.data());
-    //         return false;
-    //     }
-    //     return true;
-    // }
-    // catch (const std::exception &e)
-    // {
-    //     PRINT(ERROR, LOGIC, "failed to parse state data as json\n");
-    //     PRINT(INFO, LOGIC, "%s\n", e.what());
-    //     return false;
-    // }
+    // not empty address
+    try
+    {
+        auto json = nlohmann::json::from_cbor(state_value);
+        if (json.find(name.c_str()) == json.end())
+        {
+            PRINT(INFO, LOGIC, "Verb was 'Inc/Dec', but value does not exists\n");
+            return false;
+        }
+        auto val = json[name.c_str()].get<int>();
+        val += value;
+        json[name.c_str()] = val;
+        auto cbor = nlohmann::json::to_cbor(json);
+        secure::vector<uint8_t> secure_cbor(std::begin(cbor), std::end(cbor));
+        if (FAILED(acl::acl_write(addr, signerPubKey, secure_cbor, svn, nonce)))
+        {
+            PRINT(INFO, LOGIC, "Write to addr %s failed\n", addr.val.data());
+            return false;
+        }
+        return true;
+    }
+    catch (const std::exception &e)
+    {
+        PRINT(ERROR, LOGIC, "failed to parse state data as json\n");
+        PRINT(INFO, LOGIC, "%s\n", e.what());
+        return false;
+    }
 }
 
 bool execute_transaction(const secure::string &payload, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)

@@ -66,14 +66,14 @@ static void *process_client_request(void *_thread_data)
 			}
 
 			secure::string input_data;
-			input_data.reserve(packet.size);
+			input_data.reserve(packet.size+1);
 
 			if (recv_all(thread_data->sockfd, (void *)input_data.c_str(), packet.size) == false)
 			{
 				PRINT(ERROR, SERVER, "recv_all from %s failed\n", client_addr);
 				break;
 			}
-
+			input_data[packet.size] = '\0';
 			PRINT(INFO, SERVER, "received %ld bytes from %s\n", packet.size, client_addr);
 			secure::string output_data;
 			ret = server_process_request(packet, input_data, output_data);

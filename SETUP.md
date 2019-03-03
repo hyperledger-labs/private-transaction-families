@@ -137,7 +137,7 @@ just run it (see instructions in the [USAGE](USAGE.md) document).
    - Until  [https://github.com/hyperledger/sawtooth-rfcs/pull/23](https://github.com/hyperledger/sawtooth-rfcs/pull/23)  is implemented,
      user needs to install our fork of Hyperledger Sawtooth C++ SDK:
       - Goto [Private-transaction-families](./) folder.
-      - `$ git clone https://github.com/yoni-wolf/sawtooth-sdk-cxx.git`
+      - `$ git clone --single-branch --branch raw-txnheader https://github.com/arsulegai/sawtooth-sdk-cxx.git`
       - Go to sawtooth-sdk-cxx directory `$ cd sawtooth-sdk-cxx` and run 
         `$ ./bin/build_cxx_sdk`
 5. Compile TP code:
