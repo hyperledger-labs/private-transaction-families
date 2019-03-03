@@ -52,7 +52,7 @@ SgxSsl_Dir := $(Crypto_Dir)/sgxssl
 EDL_Dir := $(Main_Dir)/Enclave
 
 Common_C_Files := $(Common_Dir)/memset_s.c
-Common_CPP_Files := $(Common_Dir)/common_ocalls.cpp $(Common_Dir)/safe_copy.cpp
+Common_CPP_Files := $(Common_Dir)/common_ocalls.cpp $(Common_Dir)/safe_copy.cpp $(Common_Dir)/app_log.cpp
 Common_Objects := $(Common_C_Files:.c=.o) $(Common_CPP_Files:.cpp=.o)
 
 Keys_Creation_CPP_Files := $(Common_CPP_Files) genesis.cpp stubs.cpp ../common/parse_string.cpp
@@ -80,7 +80,7 @@ else
 endif
 SgxSsl_Link_Files := -L$(SgxSsl_Dir)/lib64/ -l$(SGXSSL_LIB)
 
-App_Link_Flags := $(SGX_COMMON_CFLAGS) $(Security_Link_Flags) \
+App_Link_Flags := -llog4cxx $(SGX_COMMON_CFLAGS) $(Security_Link_Flags) \
 				-L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) -l$(UaeService_Library_Name) -lsgx_ukey_exchange -lpthread \
 				$(SgxSsl_Link_Files)
 

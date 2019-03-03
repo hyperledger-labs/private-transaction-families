@@ -37,8 +37,9 @@ typedef uint64_t Result;
 #define FAILED(X) ((X) != SUCCESS)
 
 const int FAMILY_PREFIX = 6;
-const int ADDRESS_LENGTH = 71; //70 hex characters + 1 for NULL terminator;
+const int ADDRESS_LENGTH = 71; //70 hex characters + 1 for NULL terminator
 const int MAX_DATA_LEN = 1024*1024*1024; // set max data in address to 1 GB
+const int MAX_ERROR_MSG_LEN = 1023;
 
 typedef union {
 	std::array<char, ADDRESS_LENGTH> val;

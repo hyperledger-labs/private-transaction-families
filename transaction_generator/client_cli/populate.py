@@ -57,18 +57,13 @@ def do_populate(args, batches):
     payloads = get_txns()
     encoding = get_encoding()
     total_txn_count = 0
-    txns = []
 
     for payload in payloads:
+        txns = []
         txn = create_transaction(
             payload=PrivatePayload(payload, encoding, signer.get_public_key().as_hex()),
             addr= get_namespace(),#TODO get input and output from json file
             signer=signer)
         total_txn_count += 1
         txns.append(txn)
-
-    batch = create_batch(
-        transactions=txns,
-        signer=signer)
-
-    batches.append(batch)
+        batches.append(create_batch(transactions=txns,signer=signer))

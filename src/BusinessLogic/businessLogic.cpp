@@ -136,7 +136,7 @@ StlAddress getAddress(const secure::string &name, const secure::string &prefix, 
 
 // Handle an IntKey 'set' verb action. This sets a IntKey value to
 // the given value.
-bool DoSet(const secure::string &name, const int value, const int addr_len, const secure::string &prefix, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)
+std::pair<bool, secure::string> DoSet(const secure::string &name, const int value, const int addr_len, const secure::string &prefix, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)
 {
     PRINT(INFO, LOGIC, "IntKeyApplicator::DoSet Name: %s Value: %d \n", name.c_str(), value);
     StlAddress addr;
@@ -146,13 +146,13 @@ bool DoSet(const secure::string &name, const int value, const int addr_len, cons
     }
     catch (...)
     {
-        return false;
+        return std::make_pair(false, "get address failure");
     }
     secure::vector<uint8_t> state_value;
     if (!acl::acl_read(addr, signerPubKey, state_value, svn))
     {
         PRINT(ERROR, LOGIC, "acl read returened failure\n");
-        return false;
+        return std::make_pair(false, "acl read failure");
     }
     nlohmann::json json;
     if (state_value.size() != 0)
@@ -163,14 +163,14 @@ bool DoSet(const secure::string &name, const int value, const int addr_len, cons
             if (json.find(name.c_str()) != json.end())
             {
                 PRINT(INFO, LOGIC, " Verb was 'Set', but name %s already exists\n", name.c_str());
-                return false;
+                return std::make_pair(false, "already exists error");
             }
         }
         catch (const std::exception &e)
         {
             PRINT(ERROR, LOGIC, "failed to parse state data as json\n");
             PRINT(INFO, LOGIC, "%s\n", e.what());
-            return false;
+            return std::make_pair(false, "failed to parse address data as json");
         }
     }
     // add padding
@@ -186,13 +186,13 @@ bool DoSet(const secure::string &name, const int value, const int addr_len, cons
     if (FAILED(acl::acl_write(addr, signerPubKey, secure_cbor, svn, nonce)))
     {
         PRINT(INFO, LOGIC, "Write to addr %s failed\n", addr.val.data());
-        return false;
+        return std::make_pair(false, "acl write failure");
     }
-    return true;
+    return std::make_pair(true, "");
 }
 // Handle an IntKey 'inc' and 'dec' verb action. This increments an IntKey value
 // stored in global state by a given value.
-bool DoIncDec(const secure::string &name, const int value, const secure::string &prefix, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)
+std::pair<bool, secure::string> DoIncDec(const secure::string &name, const int value, const secure::string &prefix, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)
 {
     PRINT(INFO, LOGIC, "IntKeyApplicator::DoInc/Dec Name: %s Value: %d \n", name.c_str(), value);
     StlAddress addr;
@@ -202,18 +202,18 @@ bool DoIncDec(const secure::string &name, const int value, const secure::string 
     }
     catch (...)
     {
-        return false;
+        return std::make_pair(false, "get address failure");
     }
     secure::vector<uint8_t> state_value;
     if (!acl::acl_read(addr, signerPubKey, state_value, svn))
     {
         PRINT(ERROR, LOGIC, "acl read returened failure\n");
-        return false;
+        return std::make_pair(false, "acl read failure");
     }
     if (state_value.size() == 0)
     {
         PRINT(INFO, LOGIC, " Verb was 'Inc/Dec', but address not found\n");
-        return false;
+        return std::make_pair(false, "address not found error");
     }
     // not empty address
     try
@@ -222,7 +222,7 @@ bool DoIncDec(const secure::string &name, const int value, const secure::string 
         if (json.find(name.c_str()) == json.end())
         {
             PRINT(INFO, LOGIC, "Verb was 'Inc/Dec', but value does not exists\n");
-            return false;
+            return std::make_pair(false, "doesn't exists error");
         }
         auto val = json[name.c_str()].get<int>();
         val += value;
@@ -232,22 +232,22 @@ bool DoIncDec(const secure::string &name, const int value, const secure::string 
         if (FAILED(acl::acl_write(addr, signerPubKey, secure_cbor, svn, nonce)))
         {
             PRINT(INFO, LOGIC, "Write to addr %s failed\n", addr.val.data());
-            return false;
+            return std::make_pair(false, "acl write failure");
         }
-        return true;
+        return std::make_pair(true, "");
     }
     catch (const std::exception &e)
     {
         PRINT(ERROR, LOGIC, "failed to parse state data as json\n");
         PRINT(INFO, LOGIC, "%s\n", e.what());
-        return false;
+        return std::make_pair(false, "failed to parse address data as json");
     }
 }
 
-bool execute_transaction(const secure::string &payload, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)
+std::pair<bool, secure::string> execute_transaction(const secure::string &payload, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)
 {
     if (business_logic::is_acl_txn(payload))
-    {
+    {// TODO yoni
         return do_acl_action(payload, signerPubKey, svn, nonce);
     }
 
@@ -258,7 +258,7 @@ bool execute_transaction(const secure::string &payload, const SignerPubKey &sign
     int value;
     int addr_len;
     if (!payloadToParams(payload, verb, name, value, addr_len, prefix))
-        return false;
+        return std::make_pair(false, "Failed to parse payload");
 
     if (verb == "set")
     {
@@ -275,7 +275,7 @@ bool execute_transaction(const secure::string &payload, const SignerPubKey &sign
     else
     {
         PRINT(INFO, LOGIC, "invalid Verb %s\n", verb.c_str());
-        return false;
+        return std::make_pair(false,"invalid Verb");
     }
 }
 

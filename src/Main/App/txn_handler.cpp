@@ -63,7 +63,6 @@ void PrivateApplicator::Apply()
     auto signature = this->txn->signature();
     auto payload = this->txn->payload();
     
-
     std::vector<uint8_t> header_vec(serialized_header.begin(), serialized_header.end());
     // std::vector<uint8_t> signature_vec = ToHexVector(signature);
     // std::vector<uint8_t> payload_hash_vec = ToHexVector(payload_hash);
@@ -81,6 +80,7 @@ void PrivateApplicator::Apply()
         throw sawtooth::InvalidTransaction(" payload hash size is not 64 bytes");
     }
     sgx_status_t ret_val;
+    char err [MAX_ERROR_MSG_LEN+1];
     if (SGX_SUCCESS != ecall_wrapper(secure_apply, eid, &ret_val,
                                      header_vec.data(),
                                      header_vec.size(),
@@ -89,12 +89,13 @@ void PrivateApplicator::Apply()
                                      signature.c_str(),
                                      payload_hash.c_str(),
                                      payload_vec.data(),
-                                     payload_vec.size()) ||
+                                     payload_vec.size(),
+                                     err) ||
         SGX_SUCCESS != ret_val)
     {
-        std::string err_str(" Error while handling transaction, sgx error code is ");
-        err_str.append(std::to_string(ret_val));
-        throw sawtooth::InvalidTransaction(err_str);
+        std::string err_msg("sgx error code is: ");
+        err_msg.append(std::to_string(ret_val)).append(", error message is: ").append(err);
+        throw sawtooth::InvalidTransaction(err_msg);
     }
     PRINT(INFO, LISTENER, "PrivateApplicator::Apply completed\n");
 }

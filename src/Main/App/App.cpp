@@ -34,10 +34,6 @@
 #include "ecall_wrapper.h"
 #include "config.h"
 
-#include "log4cxx/logger.h"
-#include "log4cxx/basicconfigurator.h"
-#include "log4cxx/level.h"
-
 #ifdef SGX_ENCLAVE
 #include "enclave_log.h"
 #else
@@ -51,24 +47,25 @@
 #define REST_URL_PREFIX_LEN 7
 #define REST_URL_DEFAULT "http://127.0.0.1:8008"
 #define ENCLAVE_NAME "Enclave.signed.so"
+#define DEFAULT_LOG_PATH "/var/log/sawtooth/"
+
 
 //define of external globals
 std::string config::g_rest_url;
 sgx_enclave_id_t eid;
 
-static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("sawtooth.PrivateIntKeyCXX"));
-
 void Usage(bool bExit = false, int exitCode = 1)
 {
 	std::cout << "Usage" << std::endl;
-	std::cout << "TestApp [-C|--connect_string] [connect_string] [-R|--rest_url] [rest_url] [-K|--keys_dir] [keys_dir]" << std::endl;
+	std::cout << "private-tp -v [-C|--connect_string] [connect_string] [-R|--rest_url] [rest_url] [-K|--keys_dir] [keys_dir] [-L|--log_path] [log_dir]" << std::endl;
 	std::cout << "  -h, --help - print help message" << std::endl;
-
+	std::cout << "  -v, - add debug log messages (only when compiled in debug mode)" << std::endl;
 	std::cout << "  connect_string - connect string to validator in format tcp://host:port, default is " << VALIDATOR_URL_DEFAULT
 			  << std::endl;
 	std::cout << "  ret_url - url of rest api in format http://host:port, default is " << REST_URL_DEFAULT
 			  << std::endl;
-	std::cout << "  keys_dir - full path to directory containing the ledger keys, default is ~/.stl_keys/" << std::endl;
+	std::cout << "  keys_dir - full path to directory containing the private tp keys, default is ~/.stl_keys/" << std::endl;
+	std::cout << "  log_path - full path to directory containing the tp log, default is /var/log/sawtooth" << std::endl;
 	if (bExit)
 	{
 		exit(exitCode);
@@ -179,13 +176,14 @@ char *getCmdOption(char **begin, char **end, const std::string &option1, const s
 	return 0;
 }
 
-void parseArgs(int argc, char **argv, std::string &connectStr)
+void parseArgs(int argc, char **argv, std::string &connectStr, std::string &log_path)
 {
 
 	if (cmdOptionExists(argv, argv + argc, "-h", "--help"))
 	{
 		Usage(true, 0);
 	}
+
 	char *val_url = getCmdOption(argv, argv + argc, "-C", "--connect_string");
 	if (val_url)
 	{
@@ -242,6 +240,45 @@ void parseArgs(int argc, char **argv, std::string &connectStr)
 			Usage(true);
 		}
 	}
+	char *log_dir = getCmdOption(argv, argv + argc, "-L", "--log_path");
+	if (log_dir)
+	{
+		//check if dir exists
+		struct stat statbuf;
+		if (stat(log_dir, &statbuf) != -1)
+		{
+			if (S_ISDIR(statbuf.st_mode))
+			{
+				log_path = log_dir;
+				if (log_path.back() != '/')
+					log_path.append("/");
+			}
+			else
+			{
+				std::cout << "ledger log dir: " << log_dir << ", is not a directory " << std::endl;
+				Usage(true);
+			}
+		}
+		else
+		{
+			std::cout << "failed to stat ledger keys dir: "
+					  << log_dir << ", " << std::strerror(errno) << std::endl;
+			Usage(true);
+		}
+	}
+	if (cmdOptionExists(argv, argv + argc, "-v", "-v"))
+	{
+        logger->setLevel(Level::getAll());
+    }
+	//just to align with sawtooth, we only have one level of debug
+	else if (cmdOptionExists(argv, argv + argc, "-vv", "-vvv"))
+	{
+        logger->setLevel(Level::getAll());
+    }
+	else
+	{
+        logger->setLevel(Level::getError());
+	}
 }
 
 int load_enclave()
@@ -262,10 +299,6 @@ int load_enclave()
 
 void StartTP(const std::string &connectString)
 {
-	// Set up a simple configuration that logs on the console.
-	//this is needed
-	log4cxx::BasicConfigurator::configure();
-
 	// Create a transaction processor and register our
 	// handlers with it.
 	sawtooth::TransactionProcessor *p =
@@ -275,8 +308,10 @@ void StartTP(const std::string &connectString)
 	sawtooth::TransactionHandlerUPtr transaction_handler(
 		new txn_handler::PrivateHandler());
 
-	processor->RegisterHandler(
-		std::move(transaction_handler));
+	processor->RegisterHandler(std::move(transaction_handler));
+
+	// set header style to raw in order to get txn header in serialized form
+	processor->SetHeaderStyle(sawtooth::TpRequestHeaderStyle::HeaderStyleRaw);
 
 	PRINT(INFO, MAIN, "\nRun\n");
 
@@ -305,7 +340,13 @@ int main(int argc, char **argv)
 {
 	sgx_status_t status;
 	std::string connectString = VALIDATOR_URL_DEFAULT;
-	parseArgs(argc, argv, connectString);
+	std::string log_path = DEFAULT_LOG_PATH;
+
+
+	parseArgs(argc, argv, connectString, log_path);
+
+	init_log(log_path);
+
 	try
 	{
 		if (load_enclave() != 0)

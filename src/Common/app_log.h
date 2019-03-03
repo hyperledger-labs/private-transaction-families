@@ -29,7 +29,27 @@
 
 #include "log_defines.h"
 
-#define PRINT_TIME(stream)                                                          \
+#include "log4cxx/logger.h"
+#include "log4cxx/basicconfigurator.h"
+#include "log4cxx/level.h"
+#include "log4cxx/patternlayout.h"
+#include "log4cxx/fileappender.h"
+#include "log4cxx/consoleappender.h"
+#include <log4cxx/file.h>
+#include <log4cxx/helpers/pool.h>
+
+#define LOG_FILE_NAME "private_tp.log"
+
+using namespace log4cxx;
+
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("sawtooth.PrivateLedger"));
+
+void init_log(std::string log_path = "");
+
+#define BUFFER_SIZE 32768
+extern __thread char print_buf[BUFFER_SIZE];
+
+#define ADD_TIME(stream)                                                          \
 	{                                                                               \
 		auto currentTime = std::chrono::system_clock::now();                        \
 		auto milli_sec = (currentTime.time_since_epoch().count() / 1000000) % 1000; \
@@ -37,25 +57,21 @@
 		auto timeinfo = localtime(&tt);                                             \
 		char time_str[100];                                                         \
 		strftime(time_str, 100, "%d/%m/%y %H:%M:%S", timeinfo);                     \
-		fprintf(stream, "[%s:%03d] ", time_str, (int)milli_sec);                     \
+		fprintf(stream, "[%s:%03d] ", time_str, (int)milli_sec);                    \
 	}
 
 #if defined DEBUG && !defined PERFORMANCE
 #define PRINT(level, source, format, ...)                                                                         \
 	{                                                                                                             \
-		if (level == ERROR)                                                                                       \
+		if (level == ERROR || level == INFO)                                                                      \
 		{                                                                                                         \
-			PRINT_TIME(stderr);                                                                                   \
-			fprintf(stderr, "(%s:%s) [%s:%d]: " format, source, __FUNCTION__, __FILE__, __LINE__, ##__VA_ARGS__); \
-		}                                                                                                         \
-		else if (level == INFO)                                                                                   \
-		{                                                                                                         \
-			PRINT_TIME(stdout);                                                                                   \
-			fprintf(stdout, format, ##__VA_ARGS__);                                                               \
+			snprintf(print_buf, BUFFER_SIZE, "(%s:%s) [%s:%d]: " format, source, __FUNCTION__, __FILE__, __LINE__, ##__VA_ARGS__); \
+			LOG4CXX_ERROR(logger, print_buf);																	  \
 		}                                                                                                         \
 		else                                                                                                      \
 		{                                                                                                         \
-			fprintf(stdout, format, ##__VA_ARGS__);                                                               \
+			snprintf(print_buf, BUFFER_SIZE, format, ##__VA_ARGS__);                                              \
+			LOG4CXX_DEBUG(logger, print_buf);                                                              		  \
 		}                                                                                                         \
 	}
 
@@ -64,8 +80,8 @@
 	{                                                                                                             \
 		if (level == ERROR)                                                                                       \
 		{                                                                                                         \
-			PRINT_TIME(stderr);                                                                                   \
-			fprintf(stderr, "(%s:%s) [%s:%d]: " format, source, __FUNCTION__, __FILE__, __LINE__, ##__VA_ARGS__); \
+			snprintf(print_buf, BUFFER_SIZE, "(%s:%s) [%s:%d]: " format, source, __FUNCTION__, __FILE__, __LINE__, ##__VA_ARGS__); \
+			LOG4CXX_ERROR(logger, print_buf);																	  \
 		}                                                                                                         \
 	}
 #endif // DEBUG

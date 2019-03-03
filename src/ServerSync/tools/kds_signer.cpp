@@ -100,6 +100,8 @@ int main(int argc, char* argv[])
 	EC_KEY* ec_key = NULL;
 	size_t j = 0;
 	
+	init_log();
+	
 	// parse input parameters
 		
 	if (argc < 2 || argc > 3)

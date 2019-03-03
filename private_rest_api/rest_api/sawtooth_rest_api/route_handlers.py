@@ -20,7 +20,9 @@ import json
 import base64
 import struct
 import socket
+import select
 from aiohttp import web
+import traceback
 
 # pylint: disable=no-name-in-module,import-error
 # needed for the google.protobuf imports to pass pylint
@@ -347,7 +349,8 @@ class RouteHandler:
             # get the encrypted addres data from TP
             enc_res = await self._exchange_data_with_TP(encrypted_data)
         except Exception as e:
-            LOGGER.error(str(e))
+            LOGGER.error('exchange_data_with_TP exception')
+            traceback.print_exc()
             raise errors.StatusResponseMissing()
         return self._wrap_response(
             request,
@@ -373,27 +376,40 @@ class RouteHandler:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.connect((client_reader_url, client_reader_port))
-            # TP i expecting two packets, first C strcut containing request length, then request
+            # TP is expecting two packets, first C strcut containing request length, then the request
             packed_struct = struct.pack(network_packet_fmt, client_reader_type, 0, len(data), 0)
             send_ret = s.sendall(packed_struct)
             send_ret = s.sendall(data)
-            s.setblocking(False) # to preent deadlock, recv should be non-blocking since TP will need to read back from rest 
+            # to prevent deadlock, recv should be non-blocking since TP will need to read data back from rest
+            s.setblocking(False)
+            inputs = [s]
             while True:
                 try:
+                    infds = []
+                    # wait till ready to recieve new data from tp
+                    while len(infds) == 0:
+                        try:
+                            await asyncio.sleep(0) # don't block, switch to other async methods
+                        except asyncio.CancelledError as e:
+                            LOGGER.debug('asyncio.sleep(0) CancelledError') # TODO: why sleep is cancelled?
+                            continue
+                        infds, outfds, errfds = select.select(inputs, [], [],0)# timeout of 0 specifies a poll and never blocks
                     # recieve two packets from TP, first C struct containing response length, then response
                     pack_res = s.recv(20)
-                    await asyncio.sleep(0.00001) # switch to other async methods
                     net_res = struct.unpack(network_packet_fmt, pack_res)
                     encrypted_res = b''
-                    while len(encrypted_res) < net_res[2]:
-                        encrypted_res += s.recv(net_res[2]-len(encrypted_res))
+                    LOGGER.debug("reading %s bytes from private TP", net_res[2])
+                    while net_res[2] > len(encrypted_res):
+                        encrypted_res += s.recv(min(8192, net_res[2] - len(encrypted_res)))
                 except socket.timeout as e:
-                    await asyncio.sleep(0.00001) # switch to other async methods
+                    try:
+                        await asyncio.sleep(0) # don't block, switch to other async methods
+                    except asyncio.CancelledError as e:
+                        LOGGER.debug('asyncio.sleep(0) CancelledError') # TODO: why sleep is cancelled?
+                        continue
                     continue
                 except socket.error as e:
-                    if e.errno is socket.errno.EWOULDBLOCK:
-                        await asyncio.sleep(0.00001) # switch to other async methods
-                        continue
+                    LOGGER.error('socket error')
                     raise
                 else:
                     s.close()

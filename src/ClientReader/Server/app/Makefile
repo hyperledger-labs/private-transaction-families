@@ -47,7 +47,7 @@ SGX_COMMON_CFLAGS += -DPERFORMANCE
 endif
 
 App_C_Files := $(wildcard *.c)
-App_CPP_Files := $(wildcard *.cpp) $(Network_Dir)/network.cpp $(Network_Dir)/server_network.cpp $(Common_Dir)/common_ocalls.cpp
+App_CPP_Files := $(wildcard *.cpp) $(Network_Dir)/network.cpp $(Network_Dir)/server_network.cpp $(Common_Dir)/common_ocalls.cpp $(Common_Dir)/app_log.cpp
 App_C_Objects := $(App_C_Files:.c=.o) $(App_CPP_Files:.cpp=.o)
 
 App_Include_Paths := -I. -I$(Crypto_Dir) -I$(Crypto_Dir)/openssl/include -I$(Common_Dir) -I$(Network_Dir) -I$(SGX_SDK)/include
@@ -75,7 +75,7 @@ endif
 SgxSsl_Link_Files := -L$(SgxSsl_Dir)/lib64/ -l$(SGXSSL_LIB)
 
 App_Link_Flags := $(SGX_COMMON_CFLAGS) $(Security_Link_Flags) \
-				-L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) -l$(UaeService_Library_Name) -lsgx_ukey_exchange -lpthread \
+				-L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) -l$(UaeService_Library_Name) -lsgx_ukey_exchange -lpthread -llog4cxx\
 				$(SgxSsl_Link_Files)
 
 

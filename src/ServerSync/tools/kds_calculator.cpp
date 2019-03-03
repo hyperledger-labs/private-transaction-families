@@ -44,6 +44,8 @@ int main(int argc, char* argv[])
 	kdf32_key_t kds = {}; // will be used in the kds derivation loop
 	char* kds_str = NULL; // final kds converted back to hex string for output
 	
+	init_log();
+	
 	// parse input parameters
 		
 	if (argc < 2 || argc > 4)

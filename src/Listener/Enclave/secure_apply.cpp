@@ -198,7 +198,8 @@ sgx_status_t secure_apply(
     const char *signature,
     const char *payload_hash,
     const uint8_t *payload,
-    uint32_t payload_size)
+    uint32_t payload_size,
+    char* err_msg)
 {
     // lock mutex, the mutex is released when guard gets out of scope
     std::lock_guard<std::mutex> guard(secure_apply_mtx);
@@ -281,8 +282,14 @@ sgx_status_t secure_apply(
     if (status != SGX_SUCCESS)
         return status;
     // execute logic
-    if (!business_logic::execute_transaction(decrypted_payload, key, txn_svn, nonce))
+    auto res = business_logic::execute_transaction(decrypted_payload, key, txn_svn, nonce);
+    if (!res.first)
+    {
+        // fill eror mesage
+        std::string err_str = std::string(res.second.c_str()).substr(0, MAX_ERROR_MSG_LEN).c_str();
+        err_str.copy(err_msg, err_str.size());
+        err_msg[err_str.size()] = '\n';
         return SGX_ERROR_UNEXPECTED;
-
+    }
     return SGX_SUCCESS;
 }
