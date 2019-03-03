@@ -171,7 +171,7 @@ config::ActionType get_acl_action(const secure::string &action)
     }
 }
 
-bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)
+std::pair<bool, secure::string> do_acl_action(const secure::string &payload, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)
 {
 
     config::ActionType action;
@@ -180,13 +180,13 @@ bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubK
     secure::string group = "";
     uint16_t update_svn = 0;
     if (!extract_params_json(payload, action, keys, addresses, group, update_svn))
-        return false;
+        return std::make_pair(false,"parse payload error");
 
     //must be admin unless it is change key txn
     if (signerPubKey != acl::get_admin_key() && action != config::ActionType::CHANGE_MEMBER_KEY)
     {
         PRINT(ERROR, LOGIC, "ERROR! non-admin signer public key :%s is trying to change access list\n", signerPubKey.data());
-        return false;
+        return std::make_pair(false,"non admin error");
     }
     switch (action)
     {
@@ -221,7 +221,7 @@ bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubK
         //     // add access to group
         //     // return acl::allow_group_access(addr, g_id, prefix_len);
         // }
-        return true;
+        return std::make_pair(true,"");
     }
     case config::ActionType::REMOVE_GROUP:
     {
@@ -229,7 +229,7 @@ bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubK
         // get group name
         // remove group
         // remove group access?
-        return true;
+        return std::make_pair(true,"");
     }
     case config::ActionType::ADD_MEMBER:
     {
@@ -237,7 +237,7 @@ bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubK
         if (keys.size() < 1)
         {
             PRINT(ERROR, LOGIC, "action add member requires at least one member key\n");
-            return false;
+            return std::make_pair(false,"not enough param");
         }
         // get Address if exist
         if (addresses.size() > 0)
@@ -245,13 +245,13 @@ bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubK
             if (addresses.size() != keys.size())
             {
                 PRINT(ERROR, LOGIC, "addresses array size must be the same size as keys size\n");
-                return false;
+                return std::make_pair(false,"wrong param length");
             }
             // add access to member will add members if not exist
             if (!acl::add_access_to_members(addresses, keys, svn, nonce))
             {
                 PRINT(ERROR, LOGIC, "acl add_access_to_members failure\n");
-                return false;
+                return std::make_pair(false,"general failure");
             }
         }
         else // no addresses, just add members
@@ -259,89 +259,89 @@ bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubK
             if (!acl::add_members(keys, svn, nonce))
             {
                 PRINT(ERROR, LOGIC, "acl add_members failure\n");
-                return false;
+                return std::make_pair(false,"general failure");
             }
         }
         // TODO
         // get group if exists
         // add member to group
-        return true;
+        return std::make_pair(true,"");
     }
     case config::ActionType::REMOVE_MEMBER:
     {
         if (keys.size() < 1)
         {
             PRINT(ERROR, LOGIC, "action remove member requires at least one member key\n");
-            return false;
+            return std::make_pair(false,"not enough param");
         }
         if (!acl::remove_members(keys, svn, nonce))
         {
             PRINT(ERROR, LOGIC, "acl remove_members failure\n");
-            return false;
+            return std::make_pair(false,"general failure");
         }
-        return true;
+        return std::make_pair(true,"");
     }
     case config::ActionType::ADD_ACCESS:
     {
         if (keys.size() != 1)
         {
             PRINT(ERROR, LOGIC, "action add access requires exactly one member key\n");
-            return false;
+            return std::make_pair(false,"not enough params");
         }
         if (!acl::acl_is_member(keys.front(), svn, true))
         {
             PRINT(ERROR, LOGIC, "trying to add access but member doens't exist\n");
-            return false;
+            return std::make_pair(false,"doesn't exists error");
         }
         // get Address if exist
         if (addresses.size() == 0)
         {
-            PRINT(ERROR, LOGIC, "trying to add access but member doens't exist\n");
-            return false;
+            PRINT(ERROR, LOGIC, "trying to add access but address is missing\n");
+            return std::make_pair(false,"missing param error");
         }
 
         // add access to member
         if (!acl::add_access_to_members(addresses, keys, svn, nonce))
         {
             PRINT(ERROR, LOGIC, "acl add_access_to_members failure\n");
-            return false;
+            return std::make_pair(false,"general error");
         }
 
         // TODO
         // get group if exists
         // add access to group
-        return true;
+        return std::make_pair(true,"");
     }
     case config::ActionType::REMOVE_ACCESS:
     {
         if (keys.size() != 1)
         {
             PRINT(ERROR, LOGIC, "action remove access requires exactly one member key\n");
-            return false;
+            return std::make_pair(false,"missing error");
         }
         if (!acl::acl_is_member(keys.front(), svn, true))
         {
             PRINT(ERROR, LOGIC, "trying to remove access but member doens't exist\n");
-            return false;
+            return std::make_pair(false,"doesn't exists error");
         }
         // get Address if exist
         if (addresses.size() == 0)
         {
-            PRINT(ERROR, LOGIC, "trying to remove access but member doens't exist\n");
-            return false;
+            PRINT(ERROR, LOGIC, "trying to remove access but address is missing\n");
+            return std::make_pair(false,"missing param error");
         }
 
         // remove access to member
         if (!acl::remove_access_from_member(addresses, keys.front(), svn, nonce))
         {
             PRINT(ERROR, LOGIC, "acl add_access_to_members failure\n");
-            return false;
+            return std::make_pair(false,"generalerror");
         }
 
         // TODO
         // get group if exists
         // add access to group
-        return true;
+        return std::make_pair(true,"");
     }
     case config::ActionType::ADD_TO_GROUP:
     {
@@ -349,7 +349,7 @@ bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubK
         // get member
         // get group
         // add member to group
-        return true;
+        return std::make_pair(true,"");
     }
     case config::ActionType::REMOVE_FROM_GROUP:
     {
@@ -357,7 +357,7 @@ bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubK
         // get member public key
         // get group
         // remove member from group
-        return true;
+        return std::make_pair(true,"");
     }
     case config::ActionType::CHANGE_MEMBER_KEY:
     {
@@ -377,34 +377,34 @@ bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubK
         else
         {
             PRINT(ERROR, LOGIC, "action change member key requires one key or 2 if signed by admin\n");
-            return false;
+            return std::make_pair(false,"missing param error");
         }
 
         if (!acl::change_member_key(old_key, new_key, svn, nonce))
         {
             PRINT(ERROR, LOGIC, "acl change_member_key failure\n");
-            return false;
+            return std::make_pair(false,"general error");
         }
-        return true;
+        return std::make_pair(true,"");
     }
     case config::ActionType::UPDATE_SVN:
     {
         if (!acl::update_svn(update_svn, svn, nonce))
         {
             PRINT(ERROR, LOGIC, "update svn failed\n");
-            return false;
+            return std::make_pair(false,"general error");
         }
-        return true;
+        return std::make_pair(true,"");
     }
     case config::ActionType::INVALID:
     {
         PRINT(ERROR, LOGIC, "action is invalid\n");
-        return false;
+        return std::make_pair(false,"invalid action");
     }
     default:
     {
         PRINT(ERROR, LOGIC, "do_acl_action error\n");
-        return false;
+        return std::make_pair(false,"worng action error");
     }
     }
 }

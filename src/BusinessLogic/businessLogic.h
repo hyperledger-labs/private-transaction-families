@@ -20,6 +20,6 @@
 
 namespace business_logic
 {
-    bool execute_transaction(const secure::string &payload, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string& nonce);
+    std::pair<bool, secure::string> execute_transaction(const secure::string &payload, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string& nonce);
     bool bl_read(const StlAddress &addr, const SignerPubKey &key, secure::string *out_value, const uint16_t &svn);
 } // namespace business_logic

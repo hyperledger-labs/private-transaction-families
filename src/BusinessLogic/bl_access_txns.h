@@ -22,7 +22,7 @@ namespace business_logic
 {
     // checks if this is a special transaction to add/remove member/group from access control layer
     bool is_acl_txn(const secure::string &payload);
-    bool do_acl_action(const secure::string &payload, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string& nonce);
+    std::pair<bool, secure::string> do_acl_action(const secure::string &payload, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string& nonce);
     config::ActionType get_acl_action(const secure::string &payload);
     bool extract_params(const secure::string &payload,
                         secure::string &action,
