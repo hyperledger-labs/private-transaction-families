@@ -15,13 +15,13 @@ Install all components as explained in the [setup guide](SETUP.md)
        current folder
 
 2.  If you do not want to use multi node, you can use the fake ledger keys 
-    located in the genesis_files folder. Rename the files as follows: 
-    - Fake.spid to ias-test-as.spid - includes the Service Provider ID you got
+    located in the genesis_files folder:
+    - ias-test-as.spid - includes the Service Provider ID you got
       from Intel Attestation Services 
       (for example 887710ADAD9321C614316EC06F277331)
-    - Fake.crt to ias-test-as.crt - the private certificate to use when 
+    - ias-test-as.crt - the private certificate to use when
       communicating with IAS
-    - Fake.key to ias-test-as.key - the private key for the private certificate
+    - ias-test-as.key - the private key for the private certificate
     - kds.hexstr - the Key Derivation Secret to use for creating the private 
       ledger keys (for example 
       123456789012345678901234567890123456789012345678901234567890ABCD)
