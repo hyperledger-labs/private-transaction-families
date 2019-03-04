@@ -299,56 +299,6 @@ bool InternalState::CheckAccess(const secure::string &addr, const SignerPubKey &
 	return res != std::end(acl_it->second);
 }
 
-bool InternalState::ReadFromAddressPrefix(const secure::string &addr, secure::vector<StlAddress> &out_values) const
-{
-	std::vector<char> value = {};
-	int ret;
-	uint32_t id;
-	tl_call_stl_read_prefix(&ret, &id, addr.c_str(), value.data(), 0);
-	if (ret == -1)
-	{
-		PRINT(ERROR, ACL_LOG, "read from sawtooth by prefix failure, couldn't get data size\n");
-		return false;
-	}
-	if (ret == 0)
-	{
-		out_values = secure::vector<StlAddress>();
-		return true;
-	}
-	if (ret * ADDRESS_LENGTH > MAX_DATA_LEN)
-	{
-		PRINT(ERROR, ACL_LOG, "read from sawtooth by prefix failure, data size of %d is too big\n", ret);
-		return false;
-	}
-
-	uint32_t data_size = ret;
-	value.reserve(data_size * ADDRESS_LENGTH);
-	tl_call_stl_read_prefix(&ret, &id, addr.c_str(), value.data(), data_size);
-	if (ret == 0)
-	{
-		out_values = secure::vector<StlAddress>();
-		return true;
-	}
-	if (ret < 0)
-	{
-		PRINT(ERROR, ACL_LOG, "read from sawtooth by prefix failure\n");
-		return false;
-	}
-	const int add_len = ADDRESS_LENGTH-1;
-	for (int i = 0; i < ret; i++)
-	{
-		auto res  = getAddressFromStr(secure::string(std::begin(value) + (add_len*i),
-													 std::begin(value) + ((i+1)*add_len)));
-		if (!res.first)
-		{
-			PRINT(ERROR, ACL_LOG, "read address prefix failure, can't convert string to address\n");
-			return false;
-		}
-		out_values.emplace_back(res.second);
-	}
-	return true;
-}
-
 bool InternalState::ReadFromAddress(const StlAddress &addr, secure::vector<uint8_t> &out_value, const uint16_t &svn, bool is_client_reader) const
 {
 	std::vector<char> value = {};

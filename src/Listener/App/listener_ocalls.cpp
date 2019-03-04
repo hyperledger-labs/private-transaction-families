@@ -122,59 +122,6 @@ int SGX_CDECL tl_call_stl_read(uint32_t *id, const char *addr, char *value,
     return data.length();
 }
 
-int SGX_CDECL tl_call_stl_read_prefix(uint32_t *id, const char *addr_prefix,
-                                      char *value, uint32_t num_of_addr) {
-    if (id == NULL || addr_prefix == NULL ||
-        (num_of_addr != 0 && value == NULL)) {
-        PRINT(ERROR, LISTENER, "invalid arguments\n");
-        return -1;
-    }
-    const std::string address(addr_prefix);
-    if (address.size() > addr_len) {
-        PRINT(ERROR, LISTENER, "invalid address size\n");
-        return -1;
-    }
-    std::vector<std::string> addr_vec;
-
-    if (num_of_addr == 0) {
-        PRINT(INFO, LISTENER, "read from sawtooth address %s\n",
-              address.c_str())
-        // get state, push data, return data size and id
-        try  // surround with try/catch since sawtooth can throw
-        {
-            txn_handler::contextPtr->ListAddresses(&addr_vec, address);
-            if (addr_vec.size() ==0)  // no addresses for this prefix
-            {
-                PRINT(ERROR, LISTENER, "no addresses with this prefix\n");
-                return 0;
-            }
-
-            auto res = DataMap::Instance().push_data(addr_vec);
-            if (!res.first) {
-                return -1;
-            }
-            *id = res.second;
-            return addr_vec.size();
-        } catch (const sawtooth::InvalidTransaction &e) {
-            PRINT(ERROR, LISTENER, "InvalidTransaction, %s\n", e.what());
-            return -1;
-        } catch (...) {
-            PRINT(ERROR, LISTENER,
-                  "sawtooth get state failed throwed exception\n");
-            return -1;
-        }
-    }
-    // if num_of_addr != 0, pop data at givev id
-    std::string data = DataMap::Instance().pop_data(*id);
-    if (num_of_addr*addr_len < data.length()) {
-        PRINT(ERROR, LISTENER, "not enough memory to read from sawtooth\n");
-        return -1;
-    }
-    data.copy(value, data.length());
-    value[data.length()] = '\0';
-    return data.length()/addr_len;
-}
-
 sgx_status_t SGX_CDECL tl_call_stl_write(const char *addr, const char *value,
                                          size_t data_size) {
     if (addr == NULL || value == NULL) {

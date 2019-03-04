@@ -23,7 +23,6 @@ namespace acl
 {
 //read from sawtooth,
 bool acl_read(const StlAddress &addr, const SignerPubKey &key, secure::vector<uint8_t> &out_value, const uint16_t &svn, bool is_client_reader = false);
-bool acl_read_prefix(const secure::string &addr, const SignerPubKey &key, secure::vector<StlAddress> &out_values, const uint16_t &svn);
 Result acl_write(const StlAddress &addr, const SignerPubKey &key, const secure::vector<uint8_t> &buffer, const uint16_t &svn, const secure::string &nonce);
 bool acl_delete(const secure::vector<StlAddress> & addresses, const SignerPubKey &key, const uint16_t &svn);
 bool has_access(const StlAddress &addr, const SignerPubKey &key, bool is_client_reader, const uint16_t &svn);

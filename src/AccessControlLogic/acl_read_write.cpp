@@ -44,17 +44,6 @@ bool acl_read(const StlAddress &addr, const SignerPubKey &key, secure::vector<ui
 	return internalState.ReadFromAddress(addr, out_value, svn, is_client_reader);
 }
 
-bool acl_read_prefix(const secure::string &addr, const SignerPubKey &key, secure::vector<StlAddress> &out_values, const uint16_t &svn)
-{
-	if (!has_access(addr, key, false, svn))
-	{
-		PRINT(ERROR, ACL_LOG, "trying to read private address without permissions\n");
-		PRINT(INFO, ACL_LOG, "address is %s, key is %s\n", addr.c_str(), key.data());
-		return false;
-	}
-	return internalState.ReadFromAddressPrefix(addr, out_values);
-}
-
 Result acl_write(const StlAddress &addr, const SignerPubKey &key, const secure::vector<uint8_t> &buffer, const uint16_t &svn, const secure::string &nonce)
 {
 

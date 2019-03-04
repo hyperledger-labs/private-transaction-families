@@ -50,7 +50,7 @@ void PrivateApplicator::Apply()
     contextPtr = std::move(this->state);
 
     // get transaction details
-    auto serialized_header = this->txn->header_bytes();
+    auto serialized_header = this->txn->raw_header();
     // parse header
     TransactionHeader txn_header;
     if (!txn_header.ParseFromString(serialized_header))
