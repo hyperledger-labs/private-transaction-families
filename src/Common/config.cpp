@@ -20,7 +20,6 @@ namespace config
 {
 std::string get_namespace()
 {
-    //static const std::string TP_NAMESPACE = "tase_bsl";
     static const std::string TP_NAMESPACE = "private_intkey";
     return TP_NAMESPACE;
 }
@@ -31,7 +30,6 @@ std::string get_version()
 }
 std::string get_prefix()
 {
-    //static const std::string TP_PREFIX = "aabbcc";
     static const std::string TP_PREFIX = "bb563a";
     return TP_PREFIX;
 }

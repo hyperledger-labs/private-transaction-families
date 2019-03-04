@@ -23,7 +23,6 @@
 #include "access_control.h"
 #include "acl_read_write.h"
 #include "config.h"
-#include "TasePoc.h"
 #include "crypto.h"
 #include "enclave_log.h"
 #include "secure_allocator.h"

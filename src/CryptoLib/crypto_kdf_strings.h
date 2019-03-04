@@ -18,7 +18,7 @@
 #define _CRYPTO_KDF_STRINGS_H_
 
 // this should be changed for other ledger projects
-#define LEDGER_ADMIN "TASE"
+#define LEDGER_ADMIN "ADMN"
 
 // todo - give better string names
 
