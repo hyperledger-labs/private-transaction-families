@@ -64,7 +64,6 @@ class InternalState final
 	// bool update_members(const uint16_t &svn, const secure::string &nonce);
 	// bool read_members(const uint16_t &svn);
 	bool ReadFromAddress(const StlAddress &, secure::vector<uint8_t> &out_value, const uint16_t &svn, bool is_client_reader = false) const;
-	bool ReadFromAddressPrefix(const secure::string &addr, secure::vector<StlAddress> &out_values) const;
 
 	Result WriteToAddress(const StlAddress &, const secure::vector<uint8_t> &, const SignerPubKey &, const uint16_t &svn, const secure::string &nonce) const;
 	//svn

@@ -21,11 +21,6 @@ enclave {
                              [out, size=data_size] char* value, 
                              uint32_t data_size);
 
-        int tl_call_stl_read_prefix([in, out] uint32_t* id,
-                                    [in, string] const char* addr_prefix,
-                                    [out, size=70, count=num_of_addr] char* value, 
-                                    uint32_t num_of_addr);
-
         int tl_call_stl_read_cr([in, out] uint32_t* id, 
                                 [in, size=70] const char* addr, 
                                 [out, size=data_size] char* value, 
