@@ -85,6 +85,9 @@ std::pair<bool, SignerPubKey> getKeyFromStr(const secure::string &key_str)
 		PRINT(INFO, COMMON, "got %s\n", key_str.c_str());
 		return std::make_pair(false, key);
 	}
+	//transform to lower case
+	secure::string key_str_lower = key_str.c_str();
+	std::transform(key_str.begin(), key_str.end(), key_str_lower.begin(), ::tolower);
 	//validate key and compress if needed
 	if (key_str.size() == 2 * UNCOMPRESSED_PUB_KEY_BYTE_LENGTH)
 	{
@@ -94,7 +97,7 @@ std::pair<bool, SignerPubKey> getKeyFromStr(const secure::string &key_str)
 			PRINT(ERROR, COMMON, "getKeyFromStr fail, public key must start with 04\n");
 			return std::make_pair(false, key);
 		}
-		key_str.copy(key.data(), key.size() - 1);
+		key_str_lower.copy(key.data(), key.size() - 1);
 		// prefix is 02 if 'Y' is even and 03 if odd instead of 04
 		key[1] = (std::stoi(key_str.substr(key_str.size() - 1).c_str(), nullptr, 16) & 1) == 0 ? '2' : '3';
 		key[key.size() - 1] = '\0';
@@ -108,7 +111,7 @@ std::pair<bool, SignerPubKey> getKeyFromStr(const secure::string &key_str)
 			PRINT(ERROR, COMMON, "getKeyFromStr fail, compressed public key must start with 02 or 03\n");
 			return std::make_pair(false, key);
 		}
-		key_str.copy(key.data(), key.size() - 1);
+		key_str_lower.copy(key.data(), key.size() - 1);
 		key[key.size() - 1] = '\0';
 		return std::make_pair(true, key);
 	}
@@ -138,7 +141,10 @@ std::pair<bool, StlAddress> getAddressFromStr(const secure::string &addr_str)
 		return std::make_pair(false, addr);
 	}
 	// copy string to char array
-	addr_str.copy(addr.val.data(), ADDRESS_LENGTH - 1);
+	//transform to lower case
+	secure::string addr_str_lower = addr_str.c_str();
+	std::transform(addr_str.begin(), addr_str.end(), addr_str_lower.begin(), ::tolower);
+	addr_str_lower.copy(addr.val.data(), ADDRESS_LENGTH - 1);
 	addr.val[addr.val.size() - 1] = '\0';
 	return std::make_pair(true, addr);
 }
