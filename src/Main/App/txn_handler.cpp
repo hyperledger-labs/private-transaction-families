@@ -49,6 +49,7 @@ void PrivateApplicator::Apply()
     //set current context
     contextPtr = std::move(this->state);
 
+#if rfc_23
     // get transaction details
     auto serialized_header = this->txn->raw_header();
     // parse header
@@ -60,12 +61,16 @@ void PrivateApplicator::Apply()
     auto nonce = txn_header.nonce();
     auto pub_key = txn_header.signer_public_key();
     auto payload_hash = txn_header.payload_sha512();
+#else
+    std::string serialized_header = "1";
+    auto nonce = this->txn->header()->GetValue(sawtooth::TransactionHeaderField::TransactionHeaderNonce);
+    auto pub_key = this->txn->header()->GetValue(sawtooth::TransactionHeaderField::TransactionHeaderSignerPublicKey);
+    auto payload_hash = this->txn->header()->GetValue(sawtooth::TransactionHeaderField::TransactionHeaderPayloadSha512);
+#endif
     auto signature = this->txn->signature();
     auto payload = this->txn->payload();
     
     std::vector<uint8_t> header_vec(serialized_header.begin(), serialized_header.end());
-    // std::vector<uint8_t> signature_vec = ToHexVector(signature);
-    // std::vector<uint8_t> payload_hash_vec = ToHexVector(payload_hash);
     std::vector<uint8_t> payload_vec(payload.begin(), payload.end());
     if (pub_key.size() != PUB_KEY_BYTE_LENGTH * 2 && pub_key.size() != UNCOMPRESSED_PUB_KEY_BYTE_LENGTH * 2)
     {

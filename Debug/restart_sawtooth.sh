@@ -2,13 +2,13 @@
 
 #get consensus
 if [[ $1 = "poet" || $2 = "poet" ]] ; then
-  echo 1
+  echo "consensus=poet"
   consensus="poet-engine"
 elif [[ $1 = "raft" || $2 = "raft" ]] ; then
-  echo 2
+  echo "consensus=raft"
   consensus="raft-engine"
 else
-  echo 3
+  echo "consensus=devmode"
   consensus="devmode-engine-rust"
 fi
 
@@ -30,16 +30,11 @@ sawset genesis
 sudo -u sawtooth sawadm genesis config-genesis.batch
 sudo sawadm keygen --force
 echo '------------------------------------'
-echo 'start sawtooth components'
+echo 'start sawtooth components and private-tp'
 echo '------------------------------------'
 gnome-terminal \
 --tab -e "bash -c \"sudo -u sawtooth sawtooth-validator $verb; exec bash\"" \
 --tab -e "bash -c \"sudo -u sawtooth settings-tp $verb; exec bash\"" \
 --tab -e "bash -c \"sudo sawtooth-rest-api $verb; exec bash\"" \
---tab -e "bash -c \"sudo -u sawtooth $consensus -C tcp://127.0.0.1:5050 $verb; exec bash\"";
-
-echo '------------------------------------'
-echo 'start private-tp'
-echo '------------------------------------'
-sleep 1s;
-gnome-terminal --tab -e "bash -c \"source /opt/intel/sgxsdk/environment ; cd ../out; ./private-tp $verb; exec bash\""
+--tab -e "bash -c \"sleep 1s ;sudo -u sawtooth $consensus -C tcp://127.0.0.1:5050 $verb; exec bash\"" \
+--tab -e "bash -c \"sleep 1s ;source /opt/intel/sgxsdk/environment ; cd ../out ;./private-tp $verb; exec bash\"";

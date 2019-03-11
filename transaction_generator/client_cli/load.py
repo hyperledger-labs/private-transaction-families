@@ -41,7 +41,8 @@ def post_batches(url, auth_info, batches):
         code, json_result = (result.status_code, result.json())
         if not (code == 200 or code == 201 or code == 202):
             LOGGER.warning("(%s): %s", code, json_result)
-        print("post batch returned: ", code, json_result)
+        else:
+            print("post batch returned: ({}): {}".format(code, json_result))
         return (code, json_result)
     except requests.exceptions.HTTPError as e:
         LOGGER.warning("(%s): %s", e.response.status_code, e.response.reason)

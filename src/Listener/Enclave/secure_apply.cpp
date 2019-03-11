@@ -111,34 +111,36 @@ bool ValidateTxn(
     const uint8_t *payload,
     uint32_t payload_size)
 {
-    //decrypt signature with signerPublicKey, calculate hash on header and compare to decrypted header
-    EC_KEY *pub_ec_key = NULL;
-    public_ec_key_str_t pub_str = {};
-    safe_memcpy(pub_str, sizeof(public_ec_key_str_t), signer_pub_key, strnlen(signer_pub_key, sizeof(public_ec_key_str_t)));
+    if (header_size > 1)//temporary skip code till RFC #23 (get raw txn header is implemented)
+    {
+        //decrypt signature with signerPublicKey, calculate hash on header and compare to decrypted header
+        EC_KEY *pub_ec_key = NULL;
+        public_ec_key_str_t pub_str = {};
+        safe_memcpy(pub_str, sizeof(public_ec_key_str_t), signer_pub_key, strnlen(signer_pub_key, sizeof(public_ec_key_str_t)));
 
-    if (create_public_ec_key_from_str(&pub_ec_key, &pub_str) == false)
-    {
-        PRINT(ERROR, LISTENER, "create_ec_public_key_from_compressed_ec_hex_str failed\n");
-        return false;
-    }
+        if (create_public_ec_key_from_str(&pub_ec_key, &pub_str) == false)
+        {
+            PRINT(ERROR, LISTENER, "create_ec_public_key_from_compressed_ec_hex_str failed\n");
+            return false;
+        }
 
-    auto signature_vec = ToHexVector(signature);
-    if (signature_vec.empty())
-    {
-        PRINT(ERROR, LISTENER, "failed to convert signature from hex string to bytes vec\n");
-        return false;
-    }
-    if (!ecdsa_verify(serialized_header,
-                      header_size,
-                      pub_ec_key,
-                      (ecdsa_bin_signature_t *)signature_vec.data()))
-    {
-        PRINT(ERROR, LISTENER, "ecdsa_verify returned false\n");
+        auto signature_vec = ToHexVector(signature);
+        if (signature_vec.empty())
+        {
+            PRINT(ERROR, LISTENER, "failed to convert signature from hex string to bytes vec\n");
+            return false;
+        }
+        if (!ecdsa_verify(serialized_header,
+                        header_size,
+                        pub_ec_key,
+                        (ecdsa_bin_signature_t *)signature_vec.data()))
+        {
+            PRINT(ERROR, LISTENER, "ecdsa_verify returned false\n");
+            EC_KEY_free(pub_ec_key);
+            return false;
+        }
         EC_KEY_free(pub_ec_key);
-        return false;
     }
-    EC_KEY_free(pub_ec_key);
-
     //validate payload sha512 is correct (now that we trust the value in the header)
     sha512_data_t hashRes;
     if (!sha512_msg(payload, payload_size, &hashRes))
@@ -213,29 +215,31 @@ sgx_status_t secure_apply(
         PRINT(ERROR, LISTENER, "argument check failed\n");
         return SGX_ERROR_INVALID_PARAMETER;
     }
-    //validate payload sha512, signer and signature  exists inside txn header
-    if (!isSubset(serialized_header, header_size, (const uint8_t *)signer_pub_key, strnlen(signer_pub_key, UNCOMPRESSED_PUB_KEY_BYTE_LENGTH *2)))
+    if (header_size > 1)//temporary skip code till RFC #23 (get raw txn header is implemented)
     {
-        PRINT(ERROR, LISTENER, "signer public key is not present in header\n");
-        // print_byte_array(serialized_header, header_size);
-        // print_byte_array(payload_hash, sizeof(sha512_data_t));
-        return SGX_ERROR_INVALID_PARAMETER;
+        //validate payload sha512, signer and signature  exists inside txn header
+        if (!isSubset(serialized_header, header_size, (const uint8_t *)signer_pub_key, strnlen(signer_pub_key, UNCOMPRESSED_PUB_KEY_BYTE_LENGTH *2)))
+        {
+            PRINT(ERROR, LISTENER, "signer public key is not present in header\n");
+            // print_byte_array(serialized_header, header_size);
+            // print_byte_array(payload_hash, sizeof(sha512_data_t));
+            return SGX_ERROR_INVALID_PARAMETER;
+        }
+        if (!isSubset(serialized_header, header_size, (const uint8_t *)nonce, strnlen(nonce, MAX_CRYPTO_BUFFER_SIZE)))
+        {
+            PRINT(ERROR, LISTENER, "nonce is not present in header\n");
+            // print_byte_array(serialized_header, header_size);
+            // print_byte_array(payload_hash, sizeof(sha512_data_t));
+            return SGX_ERROR_INVALID_PARAMETER;
+        }
+        if (!isSubset(serialized_header, header_size, (const uint8_t *)payload_hash, sizeof(sha512_data_t)))
+        {
+            PRINT(ERROR, LISTENER, "payload hash is not present in header\n");
+            // print_byte_array(serialized_header, header_size);
+            // print_byte_array(payload_hash, sizeof(sha512_data_t));
+            return SGX_ERROR_INVALID_PARAMETER;
+        }
     }
-    if (!isSubset(serialized_header, header_size, (const uint8_t *)nonce, strnlen(nonce, MAX_CRYPTO_BUFFER_SIZE)))
-    {
-        PRINT(ERROR, LISTENER, "nonce is not present in header\n");
-        // print_byte_array(serialized_header, header_size);
-        // print_byte_array(payload_hash, sizeof(sha512_data_t));
-        return SGX_ERROR_INVALID_PARAMETER;
-    }
-    if (!isSubset(serialized_header, header_size, (const uint8_t *)payload_hash, sizeof(sha512_data_t)))
-    {
-        PRINT(ERROR, LISTENER, "payload hash is not present in header\n");
-        // print_byte_array(serialized_header, header_size);
-        // print_byte_array(payload_hash, sizeof(sha512_data_t));
-        return SGX_ERROR_INVALID_PARAMETER;
-    }
-
     auto nonce_str = secure::string(nonce);
     if (nonce_str.empty())
     {

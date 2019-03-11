@@ -38,7 +38,6 @@ bool encrypt_data(const uint8_t *data, size_t size, uint16_t svn, char **res, co
 		rw.set_files_path(keys_path);
 	}
 
-	//printf("nonce enc add :%" PRIu64 "\n", nonce);
 	rw.load_keys_from_files();
 	rw.set_signing_public_key((const public_ec_key_str_t*)p_client_public_key_str);
 
