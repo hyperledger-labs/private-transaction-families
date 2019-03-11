@@ -135,12 +135,10 @@ just run it (see instructions in the [USAGE](USAGE.md) document).
    - `$ sudo python3 setup.py install`
 
 4. install sawtooth c++ SDK
-   - Until  [https://github.com/hyperledger/sawtooth-rfcs/pull/23](https://github.com/hyperledger/sawtooth-rfcs/pull/23)  is implemented,
-     user needs to install our fork of Hyperledger Sawtooth C++ SDK:
-      - Goto [Private-transaction-families](./) folder.
-      - `$ git clone --single-branch --branch raw-txnheader https://github.com/arsulegai/sawtooth-sdk-cxx.git`
-      - Go to sawtooth-sdk-cxx directory `$ cd sawtooth-sdk-cxx` and run 
-        `$ ./bin/build_cxx_sdk`
+   - Goto [Private-transaction-families](./) folder.
+   - `$ git clone https://github.com/hyperledger/sawtooth-sdk-cxx`
+   - Go to sawtooth-sdk-cxx directory `$ cd sawtooth-sdk-cxx` and run
+   - `$ ./bin/build_cxx_sdk`
 5. Compile TP code:
    - Install libcurl - `$ sudo apt-get install libcurl4-openssl-dev`
    - `$ cd src/Main` (under [Private-transaction-families](./) folder)

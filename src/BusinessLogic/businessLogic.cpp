@@ -246,7 +246,7 @@ std::pair<bool, secure::string> DoIncDec(const secure::string &name, const int v
 std::pair<bool, secure::string> execute_transaction(const secure::string &payload, const SignerPubKey &signerPubKey, const uint16_t &svn, const secure::string &nonce)
 {
     if (business_logic::is_acl_txn(payload))
-    {// TODO yoni
+    {
         return do_acl_action(payload, signerPubKey, svn, nonce);
     }
 

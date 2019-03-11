@@ -29,7 +29,6 @@
 #include "sawtooth_sdk.h"
 #include "txn_handler.h"
 #include "config.h"
-#include "txn_handler.h"
 #include "server_network.h"
 #include "ecall_wrapper.h"
 #include "config.h"
@@ -310,9 +309,10 @@ void StartTP(const std::string &connectString)
 
 	processor->RegisterHandler(std::move(transaction_handler));
 
+#if rfc_23
 	// set header style to raw in order to get txn header in serialized form
 	processor->SetHeaderStyle(sawtooth::TpRequestHeaderStyle::HeaderStyleRaw);
-
+#endif
 	PRINT(INFO, MAIN, "\nRun\n");
 
 	processor->Run();//shouldn't return

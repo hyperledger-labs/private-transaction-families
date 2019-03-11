@@ -20,6 +20,13 @@
 #include <mutex>
 #include "sawtooth_sdk.h"
 
+// TODO until RFC (https://github.com/hyperledger/sawtooth-rfcs/pull/23/) PR is merged, we cannot validate txn header inside SGX code
+/* in order to test it, compile sawtooth cxx sdk and validator from the following and change the define to 1
+*  Sawtooth-Core: https://github.com/arsulegai/sawtooth-core/tree/raw-header-tpreq (last 5 commits)
+*  Sawtooth-SDK-CXX: https://github.com/arsulegai/sawtooth-sdk-cxx/tree/raw-txnheader (last 2 commits)
+*/
+#define rfc_23 0
+
 namespace txn_handler
 {
 
