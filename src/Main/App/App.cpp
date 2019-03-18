@@ -283,7 +283,7 @@ void parseArgs(int argc, char **argv, std::string &connectStr, std::string &log_
 int load_enclave()
 {
 	sgx_status_t status;
-	sgx_launch_token_t token;
+	sgx_launch_token_t token = {0};
 	int updated;
 
 	status = sgx_create_enclave(ENCLAVE_NAME, SGX_DEBUG_FLAG, &token, &updated, &eid, NULL);
