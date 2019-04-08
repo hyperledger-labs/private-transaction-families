@@ -1,8 +1,8 @@
 enclave {
     
     trusted {
-
-      public sgx_status_t secure_apply([in, size=header_size] const uint8_t* serialized_header, 
+        // apply ecall, called from app apply for processing transaction
+        public sgx_status_t secure_apply([in, size=header_size] const uint8_t* serialized_header,
                                         uint32_t header_size,
                                         [in, string] const char* nonce,
                                         [in, string] const char* signer_pub_key,
@@ -15,22 +15,26 @@ enclave {
     };
 
     untrusted {
-
+        // read request from sawtooth using transaction context
         int tl_call_stl_read([in, out] uint32_t* id,
                              [in, size=70] const char* addr,
-                             [out, size=data_size] char* value, 
+                             [out, size=data_size] char* value,
                              uint32_t data_size);
 
-        int tl_call_stl_read_cr([in, out] uint32_t* id, 
-                                [in, size=70] const char* addr, 
-                                [out, size=data_size] char* value, 
+        // read request from sawtooth using rest api for client read requests
+        int tl_call_stl_read_cr([in, out] uint32_t* id,
+                                [in, size=70] const char* addr,
+                                [out, size=data_size] char* value,
                                 uint32_t data_size);
 
-        sgx_status_t tl_call_stl_write([in, size=70] const char* addr,
-                                        [in, size=data_size] const char* value, 
+        // write request to sawtooth using transaction context,
+        // data of all addresses is appended and seperated with '\0'
+        sgx_status_t tl_call_stl_write([in, size=70, count=num_of_address] const char* addr,
+                                        size_t num_of_address,
+                                        [in, size=data_size] const char* value,
                                         size_t data_size);
-
-        sgx_status_t tl_call_stl_delete([in, size=70, count=num_of_address] const char* addresses, 
+        // delete request to sawtooth using transaction context
+        sgx_status_t tl_call_stl_delete([in, size=70, count=num_of_address] const char* addresses,
                                         size_t num_of_address);
 
     };

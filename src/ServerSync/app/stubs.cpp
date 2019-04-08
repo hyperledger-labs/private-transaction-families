@@ -46,9 +46,10 @@ int tl_call_stl_read_cr(uint32_t* id, const char* addr, char* value, uint32_t da
 	return 0;
 }
 
-sgx_status_t tl_call_stl_write(const char* addr, const char* value, size_t data_size)
+sgx_status_t tl_call_stl_write(const char* addr, size_t num_of_address, const char* value, size_t data_size)
 {
 	(void)addr;
+	(void)num_of_address;
 	(void)value;
 	(void)data_size;
 	

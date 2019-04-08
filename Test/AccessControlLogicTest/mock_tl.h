@@ -75,7 +75,7 @@ sgx_status_t SGX_CDECL tl_call_stl_read_cr(int* retval, uint32_t* id, const char
 
     *retval = data_size;
 }
-sgx_status_t SGX_CDECL tl_call_stl_write(sgx_status_t* retval, const char* addr, const char* value, size_t data_size)
+sgx_status_t SGX_CDECL tl_call_stl_write(sgx_status_t* retval, size_t num_of_address, const char* addr, const char* value, size_t data_size)
 {
 
     std::string val(value);

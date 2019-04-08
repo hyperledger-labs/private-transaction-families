@@ -39,7 +39,7 @@ void SetUpListener()
 TEST(Listener, tl_call_stl_write)
 {
     std::string str = "mock value in addr1";
-    ASSERT_EQ(tl_call_stl_write(addr1.c_str(), str.c_str(), str.size() + 1), 0);
+    ASSERT_EQ(tl_call_stl_write(addr1.c_str(), 1, str.c_str(), str.size() + 1), 0);
 }
 
 TEST(Listener, tl_call_stl_read)
