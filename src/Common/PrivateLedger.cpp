@@ -42,7 +42,7 @@ constexpr char hexmap[] = {'0', '1', '2', '3', '4', '5', '6', '7',
 secure::string ToHexString(const uint8_t *in, int len)
 {
 	secure::string out = "";
-	out.reserve(2 * len);
+	out.reserve((2 * len) +1);
 	for (int i = 0; i < len; ++i)
 	{
 		out += hexmap[(in[i] & 0xF0) >> 4];

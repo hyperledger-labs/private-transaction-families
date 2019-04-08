@@ -122,22 +122,45 @@ int SGX_CDECL tl_call_stl_read(uint32_t *id, const char *addr, char *value,
     return data.length();
 }
 
-sgx_status_t SGX_CDECL tl_call_stl_write(const char *addr, const char *value,
-                                         size_t data_size) {
-    if (addr == NULL || value == NULL) {
+sgx_status_t SGX_CDECL tl_call_stl_write(const char *addr,
+                                         size_t num_of_address,
+                                         const char *value, size_t data_size) {
+    if (addr == NULL || value == NULL || num_of_address < 1) {
         PRINT(ERROR, LISTENER, "invalid arguments\n");
         return SGX_ERROR_INVALID_PARAMETER;
     }
-    const std::string address(addr, addr_len);
-    if (address.size() != addr_len) {
-        PRINT(ERROR, LISTENER, "invalid address size\n");
-        return SGX_ERROR_INVALID_PARAMETER;
+    // build vector of addresses and values: 
+    // Each address is 70 charecters, values are sperated by '\0'
+    std::vector<std::pair<std::string, std::string>> addr_val_vec = {};
+    addr_val_vec.reserve(num_of_address);
+
+    const char(*addr_arr)[addr_len] = (const char(*)[addr_len])addr;
+    size_t value_size = 0, total_size = 0;
+    for (int i = 0; i < (int)num_of_address; i++) {
+        // get address
+        std::string address = std::string(addr_arr[i], addr_arr[i + 1]);
+        if (address.size() != addr_len) {
+            PRINT(ERROR, LISTENER, "invalid address size\n");
+            return SGX_ERROR_INVALID_PARAMETER;
+        }
+        // get value
+        std::string value_str = std::string(value);
+        value_size = value_str.size();
+        value += value_size + 1; // skip '\0'
+        total_size += value_size +1;
+        if (total_size > data_size+1)
+        {
+            PRINT(ERROR, LISTENER, "invalid data size\n");
+            PRINT(INFO, LISTENER, "value_size %zd, total_size %zd, data_size %zd\n", value_size, total_size, data_size);
+            return SGX_ERROR_INVALID_PARAMETER;
+        }
+        // add address and value to vector
+        PRINT(INFO, LISTENER, "write %zd bytes to sawtooth address %s\n",
+              value_size, address.c_str());
+        addr_val_vec.emplace_back(std::make_pair(address, value_str));
     }
-    PRINT(INFO, LISTENER, "write %zd bytes to sawtooth address %s\n", data_size,
-          address.c_str());
-    const std::string data(value, data_size);
     try {
-        txn_handler::contextPtr->SetState(address, data);
+        txn_handler::contextPtr->SetState(addr_val_vec);
         return SGX_SUCCESS;
     } catch (...) {
         PRINT(ERROR, LISTENER, "sawtooth set state failed\n");
@@ -159,8 +182,8 @@ sgx_status_t SGX_CDECL tl_call_stl_delete(const char *addresses,
         for (int i = 0; i < (int)num_of_address; i++) {
             std::string address = std::string(addr_arr[i], addr_arr[i + 1]);
             addr_vec.emplace_back(address);
-             PRINT(INFO, LISTENER, "delete from sawtooth address %s\n",
-              address.c_str())
+            PRINT(INFO, LISTENER, "delete from sawtooth address %s\n",
+                  address.c_str())
         }
         txn_handler::contextPtr->DeleteState(addr_vec);
         return SGX_SUCCESS;

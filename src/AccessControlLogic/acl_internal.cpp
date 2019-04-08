@@ -209,7 +209,9 @@ bool InternalState::WriteAcl(const uint16_t &svn, const secure::string &nonce)
 		return false;
 	}
 
-	if (SUCCESS != WriteToAddress(get_acl_addr(), acl_vec, admin_key, svn, nonce))
+	secure::vector<StlAddress> acl_addr_vec = {get_acl_addr()};
+	secure::vector<secure::vector<uint8_t>> acl_data_vec = {acl_vec};
+	if (SUCCESS != WriteToAddress(acl_addr_vec, acl_data_vec, admin_key, svn, nonce))
 	{
 		PRINT(ERROR, ACL_LOG, "Write to acl address failed\n");
 		return false;
@@ -226,7 +228,9 @@ bool InternalState::WriteAcl(const uint16_t &svn, const secure::string &nonce)
 	new_svn_vec.reserve(acl_hash.size() + 2);
 	new_svn_vec.insert(std::end(new_svn_vec), std::begin(acl_hash), std::end(acl_hash)); // append acl hash
 	// write new svn to svn address
-	if (SUCCESS != WriteToAddress(get_svn_addr(), new_svn_vec, admin_key, svn, nonce))
+	secure::vector<StlAddress> svn_addr_vec = {get_svn_addr()};
+	secure::vector<secure::vector<uint8_t>> svn_data_vec = {new_svn_vec};
+	if (SUCCESS != WriteToAddress(svn_addr_vec, svn_data_vec, admin_key, svn, nonce))
 	{
 		PRINT(ERROR, ACL_LOG, "Write to svn address failed\n");
 		return false;
@@ -355,25 +359,37 @@ bool InternalState::ReadFromAddress(const StlAddress &addr, secure::vector<uint8
 	return false;
 }
 
-Result InternalState::WriteToAddress(const StlAddress &addr, const secure::vector<uint8_t> &data, const SignerPubKey &signer, const uint16_t &svn, const secure::string &nonce) const
+Result InternalState::WriteToAddress(const secure::vector<StlAddress> &addr_vec, const secure::vector<secure::vector<uint8_t>> &data_vec, const SignerPubKey &signer, const uint16_t &svn, const secure::string &nonce) const
 {
 	secure::string encrypted_data;
-	if (!IsAddressPublic(addr))
-	{
-		// encrypt using crypto lib
-		if (!EncryptAddrData(data, addr, signer, svn, nonce, encrypted_data))
-		{
-			PRINT(ERROR, ACL_LOG, "EncryptAddrData failed\n");
-			return UNEXPECTED_ERR;
-		}
-	}
-	else
-	{
-		encrypted_data = ToHexString(data.data(), static_cast<int>(data.size()));
-	}
+	secure::string total_data = "";
+	secure::string addresses_str = "";
+	addresses_str.reserve(addr_vec.size() * ADDRESS_LENGTH);
 
+	for (unsigned int i = 0; i < addr_vec.size(); i++)
+	{
+		// build addresses vec into one char array to be moved as C object
+		addresses_str.append(addr_vec[i].val.data());
+
+		// build data vec into one char array to be moved as C object
+		if (!IsAddressPublic(addr_vec[i]))
+		{
+			// encrypt using crypto lib
+			if (!EncryptAddrData(data_vec[i], addr_vec[i], signer, svn, nonce, encrypted_data))
+			{
+				PRINT(ERROR, ACL_LOG, "EncryptAddrData failed\n");
+				return UNEXPECTED_ERR;
+			}
+			total_data += encrypted_data;
+		}
+		else
+		{
+			total_data += ToHexString(data_vec[i].data(), static_cast<int>(data_vec[i].size()));
+		}
+		total_data += '\0';//append '\0' as seperator before next data
+	}
 	sgx_status_t ret;
-	tl_call_stl_write(&ret, addr.val.data(), encrypted_data.c_str(), encrypted_data.length());
+	tl_call_stl_write(&ret, addresses_str.c_str(), addr_vec.size(), total_data.c_str(), total_data.length());
 	if (ret == SGX_SUCCESS)
 		return SUCCESS;
 	PRINT(ERROR, ACL_LOG, "write to sawtooth failed\n");
