@@ -46,30 +46,26 @@ bool acl_read(const StlAddress &addr, const SignerPubKey &key, secure::vector<ui
 
 Result acl_write(const StlAddress &addr, const SignerPubKey &key, const secure::vector<uint8_t> &buffer, const uint16_t &svn, const secure::string &nonce)
 {
-	secure::vector<StlAddress> addr_vec = {addr};
-	secure::vector<secure::vector<uint8_t>> buffer_vec = {buffer};
-	return acl_write(addr_vec, key, buffer_vec, svn, nonce);
+	return acl_write({std::make_pair(addr, buffer)}, key, svn, nonce);
 }
 
-Result acl_write(const secure::vector<StlAddress> &addresses_vec, const SignerPubKey &key, const secure::vector<secure::vector<uint8_t>> &buffer_vec, const uint16_t &svn, const secure::string &nonce)
+Result acl_write(const secure::vector<std::pair<StlAddress, secure::vector<uint8_t>>> &addr_data_vec, const SignerPubKey &key, const uint16_t &svn, const secure::string &nonce)
 {
-	// verify one data buffer per address
-	if (addresses_vec.size() != buffer_vec.size())
+	if (addr_data_vec.empty())
 	{
-		PRINT(INFO, ACL_LOG, "address vec size (%zd) != data vec size (%zd)\n", addresses_vec.size(), buffer_vec.size());
-		return ILLEGAL_ADDR;
+		return SGX_SUCCESS;
 	}
 	// verify has access to all addresses
-	for (const auto& addr : addresses_vec)
+	for (const auto& addr_data_pair : addr_data_vec)
 	{
-		if (!has_access(addr, key, false, svn))
+		if (!has_access(addr_data_pair.first, key, false, svn))
 		{
 			PRINT(ERROR, ACL_LOG, "trying to write to private address without permissions\n");
-			PRINT(INFO, ACL_LOG, "address is %s, key is %s\n", addr.val.data(), key.data());
+			PRINT(INFO, ACL_LOG, "address is %s, key is %s\n", addr_data_pair.first.val.data(), key.data());
 			return ILLEGAL_ADDR;
 		}
 	}
-	return internalState.WriteToAddress(addresses_vec, buffer_vec, key, svn, nonce);
+	return internalState.WriteToAddress(addr_data_vec, key, svn, nonce);
 }
 
 bool acl_delete(const secure::vector<StlAddress> &addresses, const SignerPubKey &key, const uint16_t &svn)
