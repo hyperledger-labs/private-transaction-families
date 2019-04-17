@@ -29,7 +29,7 @@ extern "C"
         //used by python generator to encrypt txn payload
 		EXTERN_DLL bool encrypt_data(const uint8_t *data, size_t size, uint16_t svn, char **res, const char* p_client_public_key_str, const char *keys_path = NULL);
         //used by pytohn client reader to encrypt request and decrypt respond
-		EXTERN_DLL bool encrypt_address(char *address, const uint8_t* data, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path);
+		EXTERN_DLL bool encrypt_address(char *address, const uint8_t* data, size_t data_size, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path);
 		EXTERN_DLL char* decrypt_data(const char *input_data, uint16_t svn, uint64_t nonce, uint8_t *secret, secure_data_content_t **out, size_t *data_size, const char *keys_path = NULL);
         // used by python to free memory from above apis
 		EXTERN_DLL bool free_mem_response(secure_data_content_t **request_str);
