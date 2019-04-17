@@ -46,7 +46,7 @@ bool encrypt_data(const uint8_t *data, size_t size, uint16_t svn, char **res, co
 	return ret;
 }
 
-bool encrypt_address(char *address, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path)
+bool encrypt_address(char *address, const uint8_t* data, size_t data_size, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path)
 {
 	init_log();
 	Ledger_Reader_Writer rw;
@@ -62,7 +62,7 @@ bool encrypt_address(char *address, uint16_t svn, uint64_t &nonce, uint8_t *secr
 #else
 	rw.set_signing_public_key((const public_ec_key_str_t*)p_client_public_key_str);
 #endif
-	if (!rw.encode_secure_data(*(ledger_hex_address_t *)address, NULL, 0, TYPE_READER_REQUEST, res))
+	if (!rw.encode_secure_data(*(ledger_hex_address_t *)address, data, data_size, TYPE_READER_REQUEST, res))
 		return false;
 	nonce = rw.get_nonce();
 	if (!rw.get_dh_shared_secret((dh_shared_secret_t *)secret))

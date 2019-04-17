@@ -15,18 +15,33 @@ def get_arg():
     parser.add_argument('-K', '--client_keys_path', type=str, help='path to folder containing client_public_key.hexstr and client_private_key.hexstr', default='~/.stl_keys')
     args = parser.parse_args()
 
-    url = args.url + '/private_state'
+    url = args.url
     addr = args.address
     client_keys_folder = args.client_keys_path
     return addr , url, client_keys_folder
 
-def request_data(address, client_keys_folder, keys_path = None):
-  
+def read_from_rest(url, addr):
+    # send request to sawtooth rest api
+    r = requests.get(u"{}/{}".format(url+ '/state', addr))
+    if (r.status_code != 200):
+        print ('status code is {}, details: {}'.format(r.status_code, r.text))
+        return ""
+    if (len(r.json()['data']) == 0):
+        print ('ERROR: returned data size is 0')
+        return ""
+    #decrypt respond
+    print ('read encrypted data from rest returned: {}'.format(r.json()['data']))
+    return r.json()['data'].encode('ascii')
+
+def encrypt_request(address, data, client_keys_folder, keys_path = None):
+# encrypt_address(char *address, const uint8_t* data, size_t data_size, uint16_t svn, uint64_t &nonce,
+#                 uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path);   
     encrypt_address = crypto_lib.encrypt_address
-    encrypt_address.argtypes = [ctypes.c_char_p, ctypes.c_short, ctypes.POINTER(ctypes.c_ulonglong), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.POINTER(ctypes.c_ubyte)), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char)]
+    encrypt_address.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_ubyte), ctypes.c_ulonglong, ctypes.c_short, ctypes.POINTER(ctypes.c_ulonglong), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.POINTER(ctypes.c_ubyte)), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char)]
     encrypt_address.restype = ctypes.c_bool
     
     res_buf = ctypes.POINTER(ctypes.c_ubyte) () 
+    data_ptr = ctypes.cast(data, (ctypes.POINTER(ctypes.c_ubyte)))
     svn = ctypes.c_short(0)
     nonce = ctypes.c_ulonglong()
     secret_array = (ctypes.c_ubyte*32) () 
@@ -41,7 +56,7 @@ def request_data(address, client_keys_folder, keys_path = None):
     with open(os.path.join(expanduser(client_keys_folder), 'client_private_key.hexstr'), 'r') as privKeyFile:
         client_priv_key = ctypes.c_char_p(privKeyFile.read().encode()) 
 
-    res = encrypt_address(ctypes.c_char_p(address), svn ,ctypes.byref(nonce), secret, ctypes.byref(res_buf), client_pub_key, client_priv_key, path_to_keys)
+    res = encrypt_address(ctypes.c_char_p(address), data_ptr, len(data), svn ,ctypes.byref(nonce), secret, ctypes.byref(res_buf), client_pub_key, client_priv_key, path_to_keys)
     
     if res:
         size_to_read = 1
@@ -69,6 +84,8 @@ def dec_data(data, nonce, secret, keys_path = None):
         _fields_ = [('nonce', ctypes.c_ulonglong),
                     ('address', ctypes.c_char * 71),
                     ('data', ctypes.c_char * (10*1024*1024))] # allocate the max of 10MB
+# decrypt_data(const char *input_data, uint16_t svn, uint64_t nonce, uint8_t *secret, secure_data_content_t **out, size_t *data_size, 
+#              const char *keys_path = NULL);
 
     decrypt_data = crypto_lib.decrypt_data
     decrypt_data.argtypes = [ctypes.POINTER(ctypes.c_char), ctypes.c_short, ctypes.c_ulonglong, ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.POINTER(secure_data)), ctypes.POINTER(ctypes.c_ulonglong), ctypes.POINTER(ctypes.c_char)]
@@ -95,11 +112,13 @@ def dec_data(data, nonce, secret, keys_path = None):
 def main():
     addr, url, client_keys_folder = get_arg()
     print ('reqeusted read from {} at address {}'.format(url, addr))
-    #encrypt request
-    enc_req, nonce, secret = request_data(addr.encode('ascii'), client_keys_folder)
+
+    data = read_from_rest(url, addr)
+    encrypt request
+    enc_req, nonce, secret = encrypt_request(addr.encode('ascii'), data, client_keys_folder)
     enc_req_url_safe = base64.urlsafe_b64encode(base64.b64decode(enc_req)).decode('ascii')
     # send request to sawtooth rest api
-    r = requests.get(u"{}/{}".format(url, enc_req_url_safe))
+    r = requests.get(u"{}/{}".format(url + '/private_state', enc_req_url_safe))
     if (r.status_code != 200):
         print ('status code is {}, details: {}'.format(r.status_code, r.text))
         return

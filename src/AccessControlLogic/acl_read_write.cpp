@@ -53,7 +53,7 @@ Result acl_write(const secure::vector<std::pair<StlAddress, secure::vector<uint8
 {
 	if (addr_data_vec.empty())
 	{
-		return SGX_SUCCESS;
+		return SUCCESS;
 	}
 	// verify has access to all addresses
 	for (const auto& addr_data_pair : addr_data_vec)
