@@ -41,7 +41,7 @@ Common_Dir := $(Protected_Ledger_Root)/Common
 ACL_Dir	   := $(Protected_Ledger_Root)/AccessControlLogic
 SgxSsl_Dir := sgxssl
 
-Crypto_CPP_Files := crypto.cpp crypto_aes.cpp crypto_ecdsa.cpp crypto_hash.cpp crypto_kdf.cpp crypto_kdf_enclave.cpp crypto_rand_engine.cpp crypto_ledger_reader_writer.cpp crypto_aes_siv.cpp crypto_stl_reader_writer_wrapper.cpp
+Crypto_CPP_Files := crypto.cpp crypto_aes.cpp crypto_ecdsa.cpp crypto_hash.cpp crypto_kdf.cpp crypto_kdf_enclave.cpp crypto_rand_engine.cpp crypto_ledger_reader_writer.cpp crypto_aes_siv.cpp
 Crypto_C_Objects :=  $(Crypto_CPP_Files:.cpp=.o)
 
 Enclave_Include_Paths := -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -I$(SgxSsl_Dir)/include

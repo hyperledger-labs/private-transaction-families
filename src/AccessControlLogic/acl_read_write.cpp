@@ -33,15 +33,35 @@ namespace acl
 
 static InternalState &internalState = InternalState::Instance();
 
-bool acl_read(const StlAddress &addr, const SignerPubKey &key, secure::vector<uint8_t> &out_value, const uint16_t &svn, bool is_client_reader)
+bool acl_read(const StlAddress &addr, const SignerPubKey &key, secure::vector<uint8_t> &value, const uint16_t &svn, bool is_client_reader)
 {
+	// verify access in ACL
 	if (!has_access(addr, key, is_client_reader, svn))
 	{
 		PRINT(ERROR, ACL_LOG, "trying to read private address without permissions\n");
 		PRINT(INFO, ACL_LOG, "address is %s, key is %s\n", addr.val.data(), key.data());
 		return false;
 	}
-	return internalState.ReadFromAddress(addr, out_value, svn, is_client_reader);
+	// if data exists in client reader request, don't need to read data from sawtooth, only decrypt it
+	if (is_client_reader && !value.empty())
+	{
+		// if address is private need to decrypt data
+		if (!internalState.IsAddressPublic(addr))
+		{
+			// decrypt using crypto lib
+			secure::vector<uint8_t> decrypted_data = {};
+			if (!internalState.DecryptAddrData(value, addr, svn, decrypted_data))
+			{
+				PRINT(ERROR, ACL_LOG, "decrypt data from sawtooth failure\n");
+
+				return false;
+			}
+			value = decrypted_data;
+		}
+		return true;
+	}
+	// read and decrypt data from sawtooth
+	return internalState.ReadFromAddress(addr, value, svn, is_client_reader);
 }
 
 Result acl_write(const StlAddress &addr, const SignerPubKey &key, const secure::vector<uint8_t> &buffer, const uint16_t &svn, const secure::string &nonce)
@@ -53,7 +73,7 @@ Result acl_write(const secure::vector<std::pair<StlAddress, secure::vector<uint8
 {
 	if (addr_data_vec.empty())
 	{
-		return SGX_SUCCESS;
+		return SUCCESS;
 	}
 	// verify has access to all addresses
 	for (const auto& addr_data_pair : addr_data_vec)
