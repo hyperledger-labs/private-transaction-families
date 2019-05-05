@@ -65,7 +65,7 @@ secure::vector<uint8_t> ToHexVector(const secure::string &in)
 			return secure::vector<uint8_t>();
 		}
 	}
-	secure::vector<uint8_t> out;
+	secure::vector<uint8_t> out = {};
 	out.reserve(str_size / 2);
 	for (size_t i = 0; i < str_size; i += 2)
 	{

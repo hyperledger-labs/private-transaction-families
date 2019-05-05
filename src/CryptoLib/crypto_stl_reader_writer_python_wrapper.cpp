@@ -46,7 +46,12 @@ bool encrypt_data(const uint8_t *data, size_t size, uint16_t svn, char **res, co
 	return ret;
 }
 
-bool encrypt_address(char *address, const uint8_t* data, size_t data_size, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path)
+bool encrypt_address(char *address, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path)
+{
+	return encrypt_address_data(address, NULL, 0, svn, nonce, secret, res, p_client_public_key_str, p_client_private_key_str, keys_path);
+}
+
+bool encrypt_address_data(char *address, const uint8_t* data, size_t data_size, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path)
 {
 	init_log();
 	Ledger_Reader_Writer rw;
@@ -56,14 +61,29 @@ bool encrypt_address(char *address, const uint8_t* data, size_t data_size, uint1
 	{
 		rw.set_files_path(keys_path);
 	}
-	rw.load_keys_from_files();
+	if (!rw.load_keys_from_files())
+	{
+		printf("load_keys_from_files failed\n");
+		return false;
+	}
 #if !defined(SKIP_SIGN) && !defined(HSM_SIGN) // signing is done by crypto lib, need also private key
-	rw.set_signing_keys((const public_ec_key_str_t*)p_client_public_key_str, (const private_ec_key_str_t*)p_client_private_key_str);
+	if (!rw.set_signing_keys((const public_ec_key_str_t*)p_client_public_key_str, (const private_ec_key_str_t*)p_client_private_key_str))
+	{
+		printf("set_signing_keys failed\n");
+		return false;
+	}
 #else
-	rw.set_signing_public_key((const public_ec_key_str_t*)p_client_public_key_str);
+	if (!rw.set_signing_public_key((const public_ec_key_str_t*)p_client_public_key_str))
+	{
+		printf("set_signing_public_key failed\n");
+		return false;
+	}
 #endif
 	if (!rw.encode_secure_data(*(ledger_hex_address_t *)address, data, data_size, TYPE_READER_REQUEST, res))
+	{
+		printf("encode_secure_data failed\n");
 		return false;
+	}
 	nonce = rw.get_nonce();
 	if (!rw.get_dh_shared_secret((dh_shared_secret_t *)secret))
 	{
@@ -92,28 +112,18 @@ char* decrypt_data(const char *input_data, uint16_t svn, uint64_t nonce, uint8_t
 	{
 		rw.set_files_path(keys_path);
 	}
-	rw.load_keys_from_files();
+	if (!rw.load_keys_from_files())
+	{
+		printf("load_keys_from_files failed\n");
+		return (char*)"";
+	}
 
-	bool res = rw.decode_secure_data(input_data, out, data_size, &client_pub_key_str);
-
-	if (!res)
+	if (!rw.decode_secure_data(input_data, out, data_size, &client_pub_key_str))
 	{
 		printf("Error: failed to decode data\n");
+		return (char*)"";
 	}
 	return (char *)((*out)->data);
-}
-
-bool free_mem_response(secure_data_content_t **response_str)
-{
-	init_log();
-	// allocated in Ledger_Reader_Writer.encode_secure_data
-	if (*response_str != NULL)
-	{
-		free(*response_str);
-		*response_str = NULL;
-	}
-
-	return true;
 }
 
 bool free_mem_request(char **request_str)

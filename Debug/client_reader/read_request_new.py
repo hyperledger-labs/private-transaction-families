@@ -10,23 +10,37 @@ crypto_lib = ctypes.cdll.LoadLibrary('../../src/lib/debug/libstl_crypto_so_u.so'
 
 def get_arg():
     parser = argparse.ArgumentParser("read_request.py")
-    parser.add_argument("address", help="valid 70 characters address to read", type=str)
+    parser.add_argument('-A' , '--address', action='append', required=True, help="<Required> valid 70 characters address to read", type=str)
     parser.add_argument('-U', '--url', type=str, help='url for the REST API, default is http://localhost:8008', default='http://localhost:8008')
     parser.add_argument('-K', '--client_keys_path', type=str, help='path to folder containing client_public_key.hexstr and client_private_key.hexstr', default='~/.stl_keys')
     args = parser.parse_args()
 
-    url = args.url + '/private_state'
+    url = args.url
     addr = args.address
     client_keys_folder = args.client_keys_path
     return addr , url, client_keys_folder
 
-def request_data(address, client_keys_folder, keys_path = None):
-  
-    encrypt_address = crypto_lib.encrypt_address
-    encrypt_address.argtypes = [ctypes.c_char_p, ctypes.c_short, ctypes.POINTER(ctypes.c_ulonglong), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.POINTER(ctypes.c_ubyte)), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char)]
+def read_from_rest(url, addr):
+    # send request to sawtooth rest api
+    r = requests.get(u"{}/{}".format(url+ '/state', addr))
+    if (r.status_code != 200):
+        print ('status code is {}, details: {}'.format(r.status_code, r.text))
+        return ""
+    if (len(r.json()['data']) == 0):
+        print ('ERROR: returned data size is 0')
+        return ""
+    #decrypt respond
+    print ('read encrypted data from rest returned: {}'.format(base64.b64decode(r.json()['data'])))
+    return base64.b64decode(r.json()['data'])
+
+def encrypt_request(address, data, client_keys_folder, keys_path = None):
+    encrypt_address = crypto_lib.encrypt_address_data
+    encrypt_address.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_ulonglong, ctypes.c_short, ctypes.POINTER(ctypes.c_ulonglong), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.POINTER(ctypes.c_ubyte)), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char)]
     encrypt_address.restype = ctypes.c_bool
     
     res_buf = ctypes.POINTER(ctypes.c_ubyte) () 
+    data_ptr = ctypes.create_string_buffer(data, len(data))
+    data_size = ctypes.c_ulonglong(len(data))
     svn = ctypes.c_short(0)
     nonce = ctypes.c_ulonglong()
     secret_array = (ctypes.c_ubyte*32) () 
@@ -41,7 +55,7 @@ def request_data(address, client_keys_folder, keys_path = None):
     with open(os.path.join(expanduser(client_keys_folder), 'client_private_key.hexstr'), 'r') as privKeyFile:
         client_priv_key = ctypes.c_char_p(privKeyFile.read().encode()) 
 
-    res = encrypt_address(ctypes.c_char_p(address), svn ,ctypes.byref(nonce), secret, ctypes.byref(res_buf), client_pub_key, client_priv_key, path_to_keys)
+    res = encrypt_address(ctypes.c_char_p(address), data_ptr, data_size, svn ,ctypes.byref(nonce), secret, ctypes.byref(res_buf), client_pub_key, client_priv_key, path_to_keys)
     
     if res:
         size_to_read = 1
@@ -94,12 +108,13 @@ def dec_data(data, nonce, secret, keys_path = None):
 
 def main():
     addr, url, client_keys_folder = get_arg()
-    print ('reqeusted read from {} at address {}'.format(url, addr))
-    #encrypt request
-    enc_req, nonce, secret = request_data(addr.encode('ascii'), client_keys_folder)
+    print ('reqeusted read from {} at address {}'.format(url, addr[0]))
+    data = read_from_rest(url, addr[0])
+    # encrypt request
+    enc_req, nonce, secret = encrypt_request(addr[0].encode('ascii'), data, client_keys_folder)
     enc_req_url_safe = base64.urlsafe_b64encode(base64.b64decode(enc_req)).decode('ascii')
-    # send request to sawtooth rest api
-    r = requests.get(u"{}/{}".format(url, enc_req_url_safe))
+    # send private read request to sawtooth rest api
+    r = requests.get(u"{}/{}".format(url + '/private_state', enc_req_url_safe))
     if (r.status_code != 200):
         print ('status code is {}, details: {}'.format(r.status_code, r.text))
         return

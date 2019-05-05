@@ -19,29 +19,16 @@
 
 #include "enclave_log.h"
 #include "crypto_enclave.h"
-#include "crypto_stl_reader_writer_wrapper.h"
 #include "businessLogic.h"
 #include "tclient_reader.h"
 #include "Enclave_t.h"
 #include "acl_read_write.h"
+#include "crypto_ledger_reader_writer.h"
 #include "enclave_role.h"
 #ifdef DEBUG
 #include "tmemory_debug.h"
 #endif
 
-class secure_data_content_wrapper
-{
-  public:
-	secure_data_content_t request_data;
-	size_t data_size;
-
-	//secure_data_content_wrapper = default;
-
-	~secure_data_content_wrapper()
-	{
-		memset_s(&request_data, data_size, 0, data_size);
-	}
-};
 
 Tclient_Reader_Data_Map data_map;
 
@@ -82,14 +69,22 @@ uint64_t enclave_client_read(const char *b64_input_str, uint32_t *output_size)
 		return 0;
 	}
 
-	size_t max_request_size = strnlen(b64_input_str, 2 * sizeof(secure_data_t));
-	if (max_request_size >= 2 * sizeof(secure_data_t)) // should be ~ 1.33 * sizeof(secure_data_t)
+	size_t min_request_size_b64 = 4 * (sizeof(secure_data_t)/3);
+	size_t max_request_size = (sizeof(secure_data_t) + MAX_DATA_LEN);
+	size_t max_request_size_b64 = (4 * (max_request_size/3))+3;
+	size_t request_size = strnlen(b64_input_str, max_request_size_b64);// should be ~ 1.33 * (sizeof(secure_data_t) + data_size)
+	if (request_size < min_request_size_b64)
+	{
+		PRINT(ERROR, SERVER, "input string is too short\n");
+		return 0;
+	}
+	if (request_size >= max_request_size_b64)
 	{
 		PRINT(ERROR, SERVER, "input string is too long\n");
 		return 0;
 	}
 
-	Ledger_Reader_Writer_Wrapper reader;
+	Ledger_Reader_Writer reader;
 
 	reader.set_svn(ledger_keys_manager.get_svn());
 
@@ -119,25 +114,36 @@ uint64_t enclave_client_read(const char *b64_input_str, uint32_t *output_size)
 		return 0;
 	}
 
-	const secure::string input_str(b64_input_str);
-	std::unique_ptr<secure_data_content_wrapper> request_data_wrapper(new secure_data_content_wrapper());
+	secure_data_content_t *p_request_data = nullptr;
+	size_t data_size = 0;
 	SignerPubKey client_pub_key_buf = {0};
-
-	if (reader.decode_secure_data_wrapper(input_str, request_data_wrapper->request_data, request_data_wrapper->data_size, (public_ec_key_str_t *)&client_pub_key_buf) == false)
+	// decode secure data will malloc p_request_data
+	if (reader.decode_secure_data(b64_input_str,  &p_request_data, &data_size, (public_ec_key_str_t *)&client_pub_key_buf) == false)
 	{
 		PRINT(ERROR, SERVER, "decode_secure_data failed\n");
 		return 0;
 	}
 
 	StlAddress addr_buf = {};
-	safe_memcpy(addr_buf.val.data(), addr_buf.val.size(), request_data_wrapper->request_data.address, sizeof(ledger_hex_address_t));
+	safe_memcpy(addr_buf.val.data(), addr_buf.val.size(), p_request_data->address, sizeof(ledger_hex_address_t));
 
 	// todo - we assume here that the data is a string...
 	secure::string ledger_data = "";
-	if (!business_logic::bl_read(addr_buf, client_pub_key_buf, &ledger_data, svn))
+	//if p_request_data->data is not empty it contains the encrypted address data, pass it to the read request.
+	if (data_size > sizeof(secure_data_content_t))
+	{
+		ledger_data = secure::string(p_request_data->data, p_request_data->data + (data_size - sizeof(secure_data_content_t)));
+	}
+	if (!business_logic::bl_read(addr_buf, client_pub_key_buf, ledger_data, svn))
 	{
 		PRINT(ERROR, SERVER, "acl_read failed\n");
 		memset_s(addr_buf.val.data(), addr_buf.val.size(), 0, addr_buf.val.size());
+		if(p_request_data != nullptr)
+		{
+			memset_s(p_request_data, data_size, 0, data_size);
+			free(p_request_data);
+			p_request_data = nullptr;
+		}
 		return 0;
 	}
 	memset_s(addr_buf.val.data(), addr_buf.val.size(), 0, addr_buf.val.size());
@@ -147,20 +153,36 @@ uint64_t enclave_client_read(const char *b64_input_str, uint32_t *output_size)
 	if (ledger_data.size() > ONE_GB) // data above 2 GB can cause issues with calculations, we use integers for some math, leave it a 1 GB to be safe. it is also converted with b64 which increase it...
 	{
 		PRINT(ERROR, SERVER, "address content is too big, can't process (size: %ld)\n", ledger_data.size());
+		if(p_request_data != nullptr)
+		{
+			memset_s(p_request_data, data_size, 0, data_size);
+			free(p_request_data);
+			p_request_data = nullptr;
+		}
 		return 0;
 	}
 
-	secure::string b64_response;
-
-	if (reader.encode_secure_data_wrapper(request_data_wrapper->request_data.address, ledger_data, ledger_data.size(), TYPE_READER_RESPONSE, b64_response) == false)
+	char* b64_response = nullptr;
+	if (reader.encode_secure_data(p_request_data->address, (const uint8_t*)ledger_data.c_str(), ledger_data.size()+1, TYPE_READER_RESPONSE, &b64_response) == false)
 	{
 		PRINT(ERROR, SERVER, "encode_secure_data failed\n");
+		if(p_request_data != nullptr)
+		{
+			memset_s(p_request_data, data_size, 0, data_size);
+			free(p_request_data);
+			p_request_data = nullptr;
+		}
 		return 0;
 	}
-
-	*output_size = b64_response.size() + 1;
-
-	return (data_map.add_data(b64_response));
+	if(p_request_data != nullptr)
+	{
+		memset_s(p_request_data, data_size, 0, data_size);
+		free(p_request_data);
+		p_request_data = nullptr;
+	}
+	secure::string s_b64_response(b64_response);
+	*output_size = s_b64_response.size() + 1;
+	return (data_map.add_data(s_b64_response));
 }
 
 int enclave_client_get_encrypted_data(uint64_t id, char *output_buffer, uint32_t output_size)
