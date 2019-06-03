@@ -916,7 +916,7 @@ bool Ledger_Reader_Writer::decode_secure_data(const char* b64_request_str, secur
 			PRINT(ERROR, CRYPTO, "malloc failed\n");
 			break;
 		}
-
+		memset_s(p_request_data, decrypt_size, 0, decrypt_size);
 		if (aes_decrypt((uint8_t*)&p_request->secure_data_payload.encrypted_data_content, decrypt_size,
 						p_request->secure_data_payload.iv, AES_IV_SIZE,
 						p_request->secure_data_payload.mac, AES_MAC_SIZE,

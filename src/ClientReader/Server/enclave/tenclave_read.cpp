@@ -124,17 +124,135 @@ uint64_t enclave_client_read(const char *b64_input_str, uint32_t *output_size)
 		return 0;
 	}
 
+
 	StlAddress addr_buf = {};
 	safe_memcpy(addr_buf.val.data(), addr_buf.val.size(), p_request_data->address, sizeof(ledger_hex_address_t));
 
 	// todo - we assume here that the data is a string...
-	secure::string ledger_data = "";
-	//if p_request_data->data is not empty it contains the encrypted address data, pass it to the read request.
+	secure::string read_respond = "";
+	//if p_request_data->data is not empty it contains the encrypted address data or txn, pass it to the read request.
 	if (data_size > sizeof(secure_data_content_t))
 	{
-		ledger_data = secure::string(p_request_data->data, p_request_data->data + (data_size - sizeof(secure_data_content_t)));
+		// if first byte is 0 this is a txn read reqeust else it is a data read request
+		if (p_request_data->data[0] == 0)//read txn request
+		{
+			// decode again!
+			if (client_pub_key_buf != acl::get_admin_key())
+			{
+				PRINT(ERROR, SERVER, "only admin can read transactions\n");
+				PRINT(INFO, SERVER, "txn read request public key is:\n");
+				print_byte_array(&client_pub_key_buf, sizeof(public_ec_key_str_t));
+				if(p_request_data != nullptr)
+				{
+					memset_s(p_request_data, data_size, 0, data_size);
+					free(p_request_data);
+					p_request_data = nullptr;
+				}
+				return 0;
+			}
+			// decode secure data will malloc p_request_data_payload
+			secure_data_content_t *p_request_data_payload = nullptr;
+			size_t data_size_payload = 0;
+			secure::string txn_payload(p_request_data->data +1, p_request_data->data + (data_size - sizeof(secure_data_content_t)));
+			Ledger_Reader_Writer txn_reader;
+			uint16_t txn_svn;
+			if (!txn_reader.get_secure_data_svn(txn_payload.c_str(), &txn_svn))
+			{
+				PRINT(ERROR, LISTENER, "failed to extract transaction svn\n");
+				if(p_request_data != nullptr)
+				{
+					memset_s(p_request_data, data_size, 0, data_size);
+					free(p_request_data);
+					p_request_data = nullptr;
+				}
+				return 0;
+			}
+			if (txn_svn > ledger_keys_manager.get_svn())
+			{
+				PRINT(ERROR, LISTENER, "read txn payload svn is newer than enclave svn\n");
+				if(p_request_data != nullptr)
+				{
+					memset_s(p_request_data, data_size, 0, data_size);
+					free(p_request_data);
+					p_request_data = nullptr;
+				}
+				return 0;
+			}
+			txn_reader.set_svn(ledger_keys_manager.get_svn());
+			// set the keys to the ones corresponding to the txn payload svn, otherwise the calculated key would be wrong
+			if (txn_reader.set_data_keys(&(ledger_keys_manager.get_ledger_keys_by_svn(txn_svn)->data_pub_ec_key_str),
+									&(ledger_keys_manager.get_ledger_keys_by_svn(txn_svn)->data_priv_ec_key_str)) == false)
+			{
+				PRINT(ERROR, SERVER, "set_data_keys failed\n");
+				if(p_request_data != nullptr)
+				{
+					memset_s(p_request_data, data_size, 0, data_size);
+					free(p_request_data);
+					p_request_data = nullptr;
+				}
+				return 0;
+			}
+			if (txn_reader.decode_secure_data(txn_payload.c_str(),  &p_request_data_payload, &data_size_payload, NULL) == false)
+			{
+				PRINT(ERROR, SERVER, "decode_secure_data txn payload failed\n");
+				if(p_request_data != nullptr)
+				{
+					memset_s(p_request_data, data_size, 0, data_size);
+					free(p_request_data);
+					p_request_data = nullptr;
+				}
+				return 0;
+			}
+			read_respond = secure::string(p_request_data_payload->data, p_request_data_payload->data + (data_size_payload - sizeof(secure_data_content_t)));
+			if(p_request_data_payload != nullptr)
+			{
+				memset_s(p_request_data_payload, data_size_payload, 0, data_size_payload);
+				free(p_request_data_payload);
+				p_request_data_payload = nullptr;
+			}
+		}
+		else // read address data
+		{
+			// cast data to struct, for each instance of struct try to read and if fail return false
+			auto offset = 1;
+			secure_addresses_data_t* sadt = reinterpret_cast<secure_addresses_data_t*>(p_request_data->data);
+			read_respond.append("{\"data\": [");
+			for (int i = 0; i < sadt->num_of_addresses; i++)
+			{
+				// get address and data from p_request_data->data
+				// first cast to uint8_t to advance pointer by offset of bytes
+				secure_address_data_t* addr_data_s = reinterpret_cast<secure_address_data_t*>(static_cast<uint8_t*>(p_request_data->data) + offset);
+				safe_memcpy(addr_buf.val.data(), addr_buf.val.size(), addr_data_s->address, sizeof(ledger_hex_address_t));
+				read_respond.append("{");
+				read_respond.append("\"address\": \"");
+				read_respond.append(addr_data_s->address);
+				secure::string addr_data = secure::string(addr_data_s->data, addr_data_s->data + addr_data_s->data_size);
+				// advance offset for next rotation
+				offset += sizeof(secure_address_data_t) + addr_data_s->data_size;
+				// read data using ACL:
+				if (!business_logic::bl_read(addr_buf, client_pub_key_buf, addr_data, svn))
+				{
+					PRINT(ERROR, SERVER, "acl_read failed\n");
+					memset_s(addr_buf.val.data(), addr_buf.val.size(), 0, addr_buf.val.size());
+					if(p_request_data != nullptr)
+					{
+						memset_s(p_request_data, data_size, 0, data_size);
+						free(p_request_data);
+						p_request_data = nullptr;
+					}
+					return 0;
+				}
+				read_respond.append("\", \"data\": ");
+				read_respond.append(addr_data);
+				read_respond.append("},");
+			}
+			// remove last ',' and close list
+			read_respond.pop_back();
+			read_respond.append("]}");
+		}
 	}
-	if (!business_logic::bl_read(addr_buf, client_pub_key_buf, ledger_data, svn))
+	// else, then p_request_data->data is empty, read data from ledger
+	else if (!business_logic::bl_read(addr_buf, client_pub_key_buf, read_respond, svn))
 	{
 		PRINT(ERROR, SERVER, "acl_read failed\n");
 		memset_s(addr_buf.val.data(), addr_buf.val.size(), 0, addr_buf.val.size());
@@ -150,9 +268,10 @@ uint64_t enclave_client_read(const char *b64_input_str, uint32_t *output_size)
 	// todo - return value?
 	// todo - is it always an hex string? if so can remove the parameter and use strlen
 
-	if (ledger_data.size() > ONE_GB) // data above 2 GB can cause issues with calculations, we use integers for some math, leave it a 1 GB to be safe. it is also converted with b64 which increase it...
+
+	if (read_respond.size() > ONE_GB) // data above 2 GB can cause issues with calculations, we use integers for some math, leave it a 1 GB to be safe. it is also converted with b64 which increase it...
 	{
-		PRINT(ERROR, SERVER, "address content is too big, can't process (size: %ld)\n", ledger_data.size());
+		PRINT(ERROR, SERVER, "address content is too big, can't process (size: %ld)\n", read_respond.size());
 		if(p_request_data != nullptr)
 		{
 			memset_s(p_request_data, data_size, 0, data_size);
@@ -163,7 +282,7 @@ uint64_t enclave_client_read(const char *b64_input_str, uint32_t *output_size)
 	}
 
 	char* b64_response = nullptr;
-	if (reader.encode_secure_data(p_request_data->address, (const uint8_t*)ledger_data.c_str(), ledger_data.size()+1, TYPE_READER_RESPONSE, &b64_response) == false)
+	if (reader.encode_secure_data(p_request_data->address, (const uint8_t*)read_respond.c_str(), read_respond.size()+1, TYPE_READER_RESPONSE, &b64_response) == false)
 	{
 		PRINT(ERROR, SERVER, "encode_secure_data failed\n");
 		if(p_request_data != nullptr)
@@ -181,6 +300,8 @@ uint64_t enclave_client_read(const char *b64_input_str, uint32_t *output_size)
 		p_request_data = nullptr;
 	}
 	secure::string s_b64_response(b64_response);
+	free(b64_response);
+	b64_response = nullptr;
 	*output_size = s_b64_response.size() + 1;
 	return (data_map.add_data(s_b64_response));
 }
