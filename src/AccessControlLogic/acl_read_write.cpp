@@ -166,6 +166,11 @@ uint16_t get_cached_svn()
 	return internalState.get_cached_svn();
 }
 
+std::array<uint8_t, 64> get_acl_hash()
+{
+	return internalState.get_acl_hash();
+}
+
 bool update_cached_acl(const uint16_t &txn_svn, const bool &is_client_reader)
 {
 	// read acl svn address
@@ -183,7 +188,7 @@ bool update_cached_acl(const uint16_t &txn_svn, const bool &is_client_reader)
 	{
 		// no svn entry in merkle tree
 		PRINT(ERROR, ACL_LOG, "acl svn address in merkle tree is empty\n");
-		return false;
+		return true;
 	}
 	// if we reached here than txn_svn >= ctx_svn used for svn_addr (otherwise read and decrypt address would fail)
 	// get first two bytes for svn

@@ -40,10 +40,25 @@ bool validate_svn(const uint16_t &client_svn)
 		PRINT(ERROR, ACL_LOG, "client svn is different than TP svn\n");
 		return false;
 	}
+	// if this is first boot after restart, update svn and acl cache from ledger
+    std::array<uint8_t, 64> empty_hash = {};
+    bool updated = false;
+	if (acl::get_acl_hash() == empty_hash)
+	{
+		//cache is empty (first action after restart), update it
+        if (!acl::update_cached_acl(client_svn, true))
+        {
+            PRINT(ERROR, ACL_LOG, "read acl svn failed\n");
+            return false;
+        }
+        updated = true;
+	}
 	if (client_svn == acl::get_cached_svn())
 		return true;
 	//txn_svn != cached svn, update svn, read svn from sawtooth context
-	if (acl::update_cached_acl(client_svn, true))
+	if (updated) // if allready updated, there is svn mismatch
+        return false;
+	if (!acl::update_cached_acl(client_svn, true))
 	{
 		PRINT(ERROR, ACL_LOG, "read acl svn failed\n");
 		return false;

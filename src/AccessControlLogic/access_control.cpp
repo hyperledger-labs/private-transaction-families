@@ -140,7 +140,14 @@ bool remove_members(const secure::vector<SignerPubKey> &keys, const uint16_t &sv
 		return false;
 	}
 
-	// add members
+	// make sure we are not removing the admin
+	if (std::find(std::begin(keys), std::end(keys), acl::get_admin_key()) != std::end(keys))
+	{
+		PRINT(ERROR, ACL_LOG, "Error, trying to remove admin from member list\n");
+		return false;
+	}
+
+	// remove members
 	for (const auto &k : keys)
 	{
 		if (!internalState.RemoveMember(k))

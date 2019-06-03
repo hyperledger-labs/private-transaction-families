@@ -32,6 +32,7 @@ bool has_access(const secure::string &addr, const SignerPubKey &key, bool is_cli
 extern "C" bool acl_is_member(const SignerPubKey &PublicKey, const uint16_t &svn = 0, bool sync_members = false);
 bool update_cached_acl(const uint16_t &svn, const bool &is_client_reader);
 uint16_t get_cached_svn();
+std::array<uint8_t, 64> get_acl_hash();
 const SignerPubKey get_admin_key();
 
 } // namespace acl
