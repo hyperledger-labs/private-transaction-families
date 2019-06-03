@@ -9,58 +9,45 @@ import struct
 openssl_lib = ctypes.cdll.LoadLibrary('../../src/CryptoLib/openssl/lib/libcrypto_so.so')
 crypto_lib = ctypes.cdll.LoadLibrary('../../src/lib/debug/libstl_crypto_so_u.so')
 
+
 def get_arg():
-    parser = argparse.ArgumentParser("read_request_new.py")
-    parser.add_argument('-A' , '--address', action='append', required=True, help="<Required> valid 70 characters address to read", type=str)
+    parser = argparse.ArgumentParser("read_request_txn.py")
+    parser.add_argument('-T' , '--txn', required=True, help="<Required> valid transaction id", type=str)
     parser.add_argument('-U', '--url', type=str, help='url for the REST API, default is http://localhost:8008', default='http://localhost:8008')
     parser.add_argument('-K', '--client_keys_path', type=str, help='path to folder containing client_public_key.hexstr and client_private_key.hexstr', default='~/.stl_keys')
     args = parser.parse_args()
 
     url = args.url
-    addr = args.address
+    txn = args.txn
     client_keys_folder = args.client_keys_path
-    return addr , url, client_keys_folder
+    return txn , url, client_keys_folder
 
-def read_from_rest(url, addresses):
+
+def read_from_rest(url, txn):
     # send request to sawtooth rest api
-    data = []
-    for addr in addresses:
-        r = requests.get(u"{}/{}".format(url+ '/state', addr))
-        if (r.status_code != 200):
-            print ('status code is {}, details: {}'.format(r.status_code, r.text))
-            data.append("")
-        elif (len(r.json()['data']) == 0):
-            print ('ERROR: returned data size is 0')
-            data.append("")
-        else:
-            data.append(base64.b64decode(r.json()['data']))
-    return data
+    r = requests.get(u"{}/{}".format(url+ '/transactions', txn))
+    if (r.status_code != 200):
+        print ('status code is {}, details: {}'.format(r.status_code, r.text))
+        return False, ""
+    elif (len(r.json()['data']) == 0):
+        print ('ERROR: returned data size is 0')
+        return False, ""
+    else:
+        return True, base64.b64decode(r.json()['data']['payload'])
 
-def encrypt_request(addresses, data, client_keys_folder, keys_path = None):
+
+def encrypt_request(data, client_keys_folder, keys_path = None):
     # declare args for call of encrypt addresses data API from crypto DLL
-    encrypt_addresses_data = crypto_lib.encrypt_addresses_data
-    encrypt_addresses_data.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.c_ulonglong, ctypes.c_short, ctypes.POINTER(ctypes.c_ulonglong), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.POINTER(ctypes.c_ubyte)), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char)]
-    encrypt_addresses_data.restype = ctypes.c_bool
+    encrypt_addresses_txn = crypto_lib.encrypt_addresses_data
+    encrypt_addresses_txn.argtypes = [ctypes.POINTER(ctypes.c_char), ctypes.c_ulonglong, ctypes.c_short, ctypes.POINTER(ctypes.c_ulonglong), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.POINTER(ctypes.c_ubyte)), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_char)]
+    encrypt_addresses_txn.restype = ctypes.c_bool
 
-    # build bytes of secure_addresses_data_t containing list of addressses and their data
-    # use '=' format to prevent padding and allignments
-    data_bytes = struct.pack('=B', len(addresses)) # first byte for number of addresses
-    data_size = struct.calcsize('=B')
-    for i in range(len(addresses)):
-        data_bytes += struct.pack('=71s', addresses[i].encode('ascii')) # 70 chars address (format 's' adds the null terminator)
-        data_size += struct.calcsize('=71s')
-        data_bytes += struct.pack('=L', len(data[i])) # address data size
-        data_size += struct.calcsize('=L')
-        for j in range(len(data[i])):
-            data_bytes += struct.pack('=c', data[i][j:j+1]) # address data as bytes
-            data_size += struct.calcsize('=c')
-
-    # fill in arguments needed for calling the encrypt AIP
+    # fill in arguments needed for calling the encrypt API
     res_buf = ctypes.POINTER(ctypes.c_ubyte) () 
     svn = ctypes.c_short(0)
     nonce = ctypes.c_ulonglong()
-    secret_array = (ctypes.c_ubyte*32) () 
-    data_ptr = ctypes.cast(data_bytes, (ctypes.POINTER(ctypes.c_ubyte)))
+    secret_array = (ctypes.c_ubyte*32) ()
+    # data_ptr = ctypes.cast(data, (ctypes.POINTER(ctypes.c_ubyte)))
     secret = ctypes.cast(secret_array, (ctypes.POINTER(ctypes.c_ubyte)))
     path_to_keys = ctypes.c_char_p(keys_path)
     import os
@@ -71,7 +58,7 @@ def encrypt_request(addresses, data, client_keys_folder, keys_path = None):
         client_priv_key = ctypes.c_char_p(privKeyFile.read().encode()) 
 
     # call API
-    res = encrypt_addresses_data(data_ptr, data_size, svn ,ctypes.byref(nonce), secret, ctypes.byref(res_buf), client_pub_key, client_priv_key, path_to_keys)
+    res = encrypt_addresses_txn(ctypes.c_char_p(data), len(data), svn ,ctypes.byref(nonce), secret, ctypes.byref(res_buf), client_pub_key, client_priv_key, path_to_keys)
     
     if res:
         size_to_read = 1
@@ -112,17 +99,21 @@ def dec_data(data, nonce, secret, keys_path = None):
 
     if size.value is not 0:
         content = (secure_data_p.contents)
-        print ('decoded data from addresses is {}\n'.format(content.data.decode('ascii')))
+        print ('decoded payload is:\n{}'.format(content.data.decode('ascii')))
         ctypes.CDLL(ctypes.util.find_library('c')).free(secure_data_p)
 
 
 
 def main():
-    addr, url, client_keys_folder = get_arg()
-    print ('reqeusted read from {} at addresses {}'.format(url, addr))
-    data = read_from_rest(url, addr)
+    txn_id, url, client_keys_folder = get_arg()
+    print ('reqeusted read from {} at transactions {}'.format(url, txn_id))
+    status, data = read_from_rest(url, txn_id)
+    if not status:
+        return
+    # add first byte 0 to mark as txn read request and remove null terminator byte from data
+    data = (0).to_bytes(1, byteorder='big') +  data[:-1]
     # encrypt request
-    enc_req, nonce, secret = encrypt_request(addr, data, client_keys_folder)
+    enc_req, nonce, secret = encrypt_request(data, client_keys_folder)
     enc_req_url_safe = base64.urlsafe_b64encode(base64.b64decode(enc_req)).decode('ascii')
     # send private read request to sawtooth rest api
     r = requests.get(u"{}/{}".format(url + '/private_state', enc_req_url_safe))

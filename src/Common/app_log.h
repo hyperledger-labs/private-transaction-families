@@ -71,7 +71,7 @@ extern __thread char print_buf[BUFFER_SIZE];
 		else                                                                                                      \
 		{                                                                                                         \
 			snprintf(print_buf, BUFFER_SIZE, format, ##__VA_ARGS__);                                              \
-			LOG4CXX_DEBUG(logger, print_buf);                                                              		  \
+			fputs(print_buf, stdout);                                                                             \
 		}                                                                                                         \
 	}
 

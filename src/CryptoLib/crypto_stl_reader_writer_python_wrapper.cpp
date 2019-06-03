@@ -19,6 +19,7 @@
 #include "app_log.h"
 #include <stdio.h>
 #include <string.h>
+#include "secure_allocator.h"
 
 #include <stdint.h>
 #include <inttypes.h>
@@ -46,14 +47,25 @@ bool encrypt_data(const uint8_t *data, size_t size, uint16_t svn, char **res, co
 	return ret;
 }
 
+
 bool encrypt_address(char *address, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path)
 {
-	return encrypt_address_data(address, NULL, 0, svn, nonce, secret, res, p_client_public_key_str, p_client_private_key_str, keys_path);
+	return encrypt_request(address, NULL, 0, svn, nonce, secret, res, p_client_public_key_str, p_client_private_key_str, keys_path);
 }
 
-bool encrypt_address_data(char *address, const uint8_t* data, size_t data_size, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path)
+bool encrypt_addresses_data(const uint8_t* data, size_t data_size, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path)
+{
+	ledger_hex_address_t address = {};
+	memset_s(address, sizeof(ledger_hex_address_t)-1,'0',sizeof(ledger_hex_address_t)-1);
+	address[sizeof(ledger_hex_address_t)-1] = '\0';
+
+	return encrypt_request(address.data, data, data_size, svn, nonce, secret, res, p_client_public_key_str, p_client_private_key_str, keys_path);
+}
+
+bool encrypt_request(char *address, const uint8_t* data, size_t data_size, uint16_t svn, uint64_t &nonce, uint8_t *secret, char **res, const char* p_client_public_key_str, const char* p_client_private_key_str, const char *keys_path)
 {
 	init_log();
+
 	Ledger_Reader_Writer rw;
 
 	rw.set_svn(svn);
@@ -79,7 +91,7 @@ bool encrypt_address_data(char *address, const uint8_t* data, size_t data_size, 
 		return false;
 	}
 #endif
-	if (!rw.encode_secure_data(*(ledger_hex_address_t *)address, data, data_size, TYPE_READER_REQUEST, res))
+	if (!rw.encode_secure_data(*(ledger_hex_address_t*)address, data, data_size, TYPE_READER_REQUEST, res))
 	{
 		printf("encode_secure_data failed\n");
 		return false;
