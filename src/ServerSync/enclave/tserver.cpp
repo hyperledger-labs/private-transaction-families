@@ -527,7 +527,14 @@ int enclave_msg3(const char* input_buffer, size_t input_size,
             msg4_status = MSG4_IAS_QUOTE;
             PRINT(ERROR, SERVER, "attestation report status is %d\n", attestation_report.status);
         }
-
+#ifdef DEBUG
+        // only in debug mode, ignore group out of date error when SGX is not updated with latest TCB
+		if (attestation_report.status == IAS_QUOTE_GROUP_OUT_OF_DATE)
+        {
+            msg4_status = MSG4_OK;
+            PRINT(ERROR, SERVER, "attestation report status is GROUP_OUT_OF_DATE ignoring error in debug mode\n");
+        }
+#endif
 #ifdef VERIFY_PSE_ATTESTATION
         if (attestation_report.pse_status != IAS_PSE_OK)
         {
