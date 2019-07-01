@@ -46,6 +46,7 @@ For more information about how Private Transaction Families work, see the
 ## Initial Committers
 
 - [Yoni Wolf](https://github.com/yoni-wolf)
+- [Ishai Nadler](https://github.com/naishai)
 - [Shefy Gurary](https://github.com/sgurary)
 - [Ronen Shem-tov](https://github.com/ronenshemtov)
 - [Edan Sorski](https://github.com/esorski)
