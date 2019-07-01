@@ -42,4 +42,7 @@ echo "-------------------------------------------"
 echo "reading address"
 echo "-------------------------------------------"
 cd client_reader
+echo "legacy read method:"
 python3 read_request.py bb563a905f1957a0dd5fbf218d5d402d303ecec6ee9e33cf5c6715a1d148fd73f73188 -K ../client1_keys
+echo "mulitple read method:"
+python3 read_request_new.py -A bb563a905f1957a0dd5fbf218d5d402d303ecec6ee9e33cf5c6715a1d148fd73f73188 -A bb563a0000000000000000000000000000000000000000000000000000000000000001 -A bb563a0000000000000000000000000000000000000000000000000000000000000002 -K ../admin_keys

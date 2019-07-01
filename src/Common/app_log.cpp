@@ -33,7 +33,7 @@ void init_log(std::string log_path) {
         layout->activateOptions(p);
         FileAppenderPtr fileAppender(new FileAppender());
         fileAppender->setFile(log_path + LOG_FILE_NAME);
-        fileAppender->setAppend(false);
+        fileAppender->setAppend(true);
         fileAppender->setLayout(layout);
         fileAppender->activateOptions(p);
         logger->addAppender(fileAppender);

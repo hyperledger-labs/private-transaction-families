@@ -2,7 +2,7 @@
 .PHONY: all clean
 
 all:
-	#$(shell mkdir -p ~/.stl_keys)
+	$(shell mkdir -p ../../out)
 	
 	$(MAKE) -C ../CryptoLib all
 	$(MAKE) -C ../Common all

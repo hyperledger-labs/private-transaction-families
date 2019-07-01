@@ -278,27 +278,27 @@ std::pair<bool, secure::string> execute_transaction(const secure::string &payloa
     }
 }
 
-bool bl_read(const StlAddress &addr, const SignerPubKey &key, secure::string *out_value, const uint16_t &svn)
+bool bl_read(const StlAddress &addr, const SignerPubKey &key, secure::string &value, const uint16_t &svn)
 {
-    secure::vector<uint8_t> data_vec;
+    secure::vector<uint8_t> data_vec  = ToHexVector(value);
     if (!acl::acl_read(addr, key, data_vec, svn, true))
         return false;
     if (data_vec.empty())
     {
-        *out_value = "";
+        value = "";
         return true;
     }
     try
     {
         auto json = nlohmann::json::from_cbor(data_vec);
-        *out_value = json.dump().c_str();
+        value = json.dump().c_str();
         return true;
     }
     catch (const std::exception &e)
     {
-        PRINT(ERROR, LOGIC, "failed to parse state data as json, showing as hex string\n");
+        PRINT(INFO, LOGIC, "failed to parse state data as cbor, showing as hex string\n");
         PRINT(INFO, LOGIC, "%s\n", e.what());
-        *out_value = ToHexString(data_vec.data(), data_vec.size());
+        value = ToHexString(data_vec.data(), data_vec.size());
         return true;
     }
 }

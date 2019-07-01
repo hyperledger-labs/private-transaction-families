@@ -24,7 +24,7 @@ namespace acl
 //read from sawtooth,
 bool acl_read(const StlAddress &addr, const SignerPubKey &key, secure::vector<uint8_t> &out_value, const uint16_t &svn, bool is_client_reader = false);
 Result acl_write(const StlAddress &addr, const SignerPubKey &key, const secure::vector<uint8_t> &buffer, const uint16_t &svn, const secure::string &nonce);
-Result acl_write(const secure::vector<StlAddress> &addresses_vec, const SignerPubKey &key, const secure::vector<secure::vector<uint8_t>> &buffer_vec, const uint16_t &svn, const secure::string &nonce);
+Result acl_write(const secure::vector<std::pair<StlAddress, secure::vector<uint8_t>>> &addr_data_vec, const SignerPubKey &key, const uint16_t &svn, const secure::string &nonce);
 bool acl_delete(const secure::vector<StlAddress> & addresses, const SignerPubKey &key, const uint16_t &svn);
 bool has_access(const StlAddress &addr, const SignerPubKey &key, bool is_client_reader, const uint16_t &svn);
 bool has_access(const secure::string &addr, const SignerPubKey &key, bool is_client_reader, const uint16_t &svn);
@@ -32,6 +32,7 @@ bool has_access(const secure::string &addr, const SignerPubKey &key, bool is_cli
 extern "C" bool acl_is_member(const SignerPubKey &PublicKey, const uint16_t &svn = 0, bool sync_members = false);
 bool update_cached_acl(const uint16_t &svn, const bool &is_client_reader);
 uint16_t get_cached_svn();
+std::array<uint8_t, 64> get_acl_hash();
 const SignerPubKey get_admin_key();
 
 } // namespace acl

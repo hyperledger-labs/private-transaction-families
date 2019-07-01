@@ -64,8 +64,8 @@ class InternalState final
 	// bool update_members(const uint16_t &svn, const secure::string &nonce);
 	// bool read_members(const uint16_t &svn);
 	bool ReadFromAddress(const StlAddress &, secure::vector<uint8_t> &out_value, const uint16_t &svn, bool is_client_reader = false) const;
-
-	Result WriteToAddress(const secure::vector<StlAddress> &, const secure::vector<secure::vector<uint8_t>> &, const SignerPubKey &, const uint16_t &svn, const secure::string &nonce) const;
+	bool DecryptAddrData(const secure::vector<uint8_t> &toDecrypt, const StlAddress &addr, const uint16_t &svn, secure::vector<uint8_t> &out) const;
+	Result WriteToAddress(const secure::vector<std::pair<StlAddress, secure::vector<uint8_t>>> &addr_data_vec, const SignerPubKey &, const uint16_t &svn, const secure::string &nonce) const;
 	//svn
 	uint16_t get_cached_svn() const;
 	std::array<uint8_t, 64> get_acl_hash() const;
@@ -88,7 +88,6 @@ class InternalState final
 
 	//encryption
 	bool EncryptAddrData(const secure::vector<uint8_t> &toEncrypt, const StlAddress &addr, const SignerPubKey &signer, const uint16_t &svn, const secure::string &nonce, secure::string &out) const;
-	bool DecryptAddrData(const secure::vector<uint8_t> &toDecrypt, const StlAddress &addr, const uint16_t &svn, secure::vector<uint8_t> &out) const;
 
 	//SVN
 	std::array<uint8_t, 64> acl_hash = {};

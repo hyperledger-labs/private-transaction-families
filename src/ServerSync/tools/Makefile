@@ -1,6 +1,6 @@
 ######## General Settings ########
 
-ifeq ($(DEBUG), 1)
+ifeq ($(SGX_DEBUG), 1)
         COMMON_CFLAGS += -O0 -g -DDEBUG
         Binary_Folder := debug
 else
@@ -32,7 +32,7 @@ App_C_Flags := $(COMMON_CFLAGS) -fpic -fpie -fstack-protector -Wformat -Wformat-
 App_CXX_Flags := $(App_C_Flags) -std=c++11
 
 Security_Link_Flags := -Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now -pie
-ifeq ($(DEBUG), 1)
+ifeq ($(SGX_DEBUG), 1)
 	OPENSSL_CRYPTO_LIB := cryptod
 else
 	OPENSSL_CRYPTO_LIB := crypto

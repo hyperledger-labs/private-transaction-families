@@ -21,7 +21,7 @@
 
 #include <sgx_uae_service.h>
 
-#define VERIFY_PSE_ATTESTATION 1
+// #define VERIFY_PSE_ATTESTATION 1
 
 #define KDS_FILE	 		"genesis_files/kds.hexstr"
 #define KDS_SIG_FILE 		"genesis_files/kds_signature.hexstr"

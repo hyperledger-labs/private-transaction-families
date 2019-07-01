@@ -30,6 +30,21 @@ typedef enum {
 
 #pragma pack(1)
 
+typedef struct __secure_address_data_t
+{
+    ledger_hex_address_t address;
+    // encrypted data at address
+    uint32_t data_size;
+    uint8_t data[];
+} secure_address_data_t;
+
+typedef struct __secure_addresses_data_t
+{
+    uint8_t num_of_addresses;
+    // array of addresses and their data
+    secure_address_data_t data_list[];
+} secure_addresses_data_t;
+
 typedef struct __secure_data_content_t
 {
 	// client reader verifies the response nonce is identical to the request nonce
@@ -38,7 +53,11 @@ typedef struct __secure_data_content_t
     // this is a hex string, all of it must be used, so the last byte must be '\0', only hex characters allowed (0-9, a-f, A-F)
     ledger_hex_address_t address;
     
-    // for transactions and client reader response, not used in client reader requests
+    // for encrypted transaction ,the data will contain the encrypted payload
+    // for request to read transaction, the data will contain first byte of 0 and then encrypted paylaod
+    // for read request of mutliple addresses, the data will contain secure_addresses_data_t struct
+    // for old read request of one address wihtout it's encrypted content, the data will be empty
+    // for read response data will contain encrypted response.
     uint8_t data[];
 } secure_data_content_t;
 
@@ -57,7 +76,7 @@ typedef struct __secure_data_payload_t
     uint8_t iv[AES_IV_SIZE];
     uint8_t mac[AES_MAC_SIZE];
     
-    // size of the data following this structure, should be 0 for client reader
+    // size of the data following this structure
     uint64_t size;
     
     secure_data_content_t encrypted_data_content;

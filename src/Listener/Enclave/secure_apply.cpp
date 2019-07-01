@@ -37,7 +37,7 @@
 
 sgx_status_t decrypt_payload(const char *data, secure::string &out_payload, const uint16_t &txn_svn)
 {
-    secure_data_content_t *p_request_data = NULL;
+    secure_data_content_t *p_request_data = nullptr;
     // public_ec_key_str_t client_pub_key_str = {0};
     Ledger_Reader_Writer reader;
     size_t data_size = 0;
@@ -65,14 +65,13 @@ sgx_status_t decrypt_payload(const char *data, secure::string &out_payload, cons
     }
 
     //TODO how to check if we get uint8_t or string?
-    secure::string decrypted_payload(p_request_data->data, p_request_data->data + data_size - sizeof(secure_data_content_t));
-
-    if (p_request_data != NULL) // allocated in reader.decode_secure_data
+    out_payload = secure::string(p_request_data->data, p_request_data->data + (data_size - sizeof(secure_data_content_t)));
+    if (p_request_data != nullptr) // allocated in reader.decode_secure_data
     {
+        memset_s(p_request_data, data_size, 0, data_size);
         free(p_request_data);
-        p_request_data = NULL;
+        p_request_data = nullptr;
     }
-    out_payload = decrypted_payload;
     return SGX_SUCCESS;
 }
 
@@ -177,10 +176,25 @@ bool validate_svn(const uint16_t txn_svn)
         PRINT(ERROR, ACL_LOG, "txn svn is newer than TP svn\n");
         return false;
     }
+    // if this is first boot after restart, update svn and acl cache from ledger
+    std::array<uint8_t, 64> empty_hash = {};
+    bool updated = false;
+	if (acl::get_acl_hash() == empty_hash)
+	{
+		//cache is empty (first action after restart), update it
+        if (!acl::update_cached_acl(txn_svn, false))
+        {
+            PRINT(ERROR, ACL_LOG, "read acl svn failed\n");
+            return false;
+        }
+        updated = true;
+	}
     if (txn_svn == acl::get_cached_svn())
         return true;
     //txn_svn != cached svn, update svn, read svn from sawtooth context
-    if (acl::update_cached_acl(txn_svn, false))
+    if (updated) // if allready updated, there is svn mismatch
+        return false;
+    if (!acl::update_cached_acl(txn_svn, false))
     {
         PRINT(ERROR, ACL_LOG, "read acl svn failed\n");
         return false;
