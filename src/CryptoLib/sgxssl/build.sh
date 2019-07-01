@@ -23,7 +23,7 @@ fi
 
 # get a fresh copy of sgx-ssl
 rm -rf intel-sgx-ssl
-git clone https://github.com/intel/intel-sgx-ssl.git || exit 1
+git clone --branch openssl_1.1.0 https://github.com/intel/intel-sgx-ssl.git || exit 1
 
 # cleanup old builds
 rm -rf $PROJECT_ROOT/lib64/*
