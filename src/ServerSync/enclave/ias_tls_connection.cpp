@@ -509,7 +509,8 @@ static bool parse_ias_response(char* buffer, size_t buf_len, int* code, char** c
 
 		if (length_found == false && strncasecmp("content-length: ", strings[i], strnlen("content-length: ", MAXLEN_FIXED_STRING)) == 0)
 		{
-			if (sgxssl_sscanf(strings[i], "content-length: %d", &expected_content_len) != 1)
+			if ((sgxssl_sscanf(strings[i], "Content-Length: %d", &expected_content_len) != 1) &&
+			    (sgxssl_sscanf(strings[i], "content-length: %d", &expected_content_len) != 1))
 			{
 				PRINT(ERROR, IAS, "parsing response failed, bad content length\n");
 				break;
