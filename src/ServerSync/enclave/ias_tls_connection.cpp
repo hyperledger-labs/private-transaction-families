@@ -44,8 +44,8 @@ extern "C" int sgxssl_sscanf(const char *str, const char *fmt, ...);
 #define MAXLEN_CONTENT_STRING 		8192 // usually less then 3000
 
 
-#define ATTEST_REQUEST	"GET https://" IAS_HOST_ADDRESS ":" IAS_HOST_PORT_STR "/attestation/sgx/v3/sigrl/%08x HTTP/1.1\r\n\r\n"
-#define REPORT_REQUEST	"POST https://" IAS_HOST_ADDRESS ":" IAS_HOST_PORT_STR "/attestation/sgx/v3/report HTTP/1.1\r\ncontent-type: application/json\r\ncontent-length: %d\r\n\r\n%s"
+#define ATTEST_REQUEST	"GET " IAS_BASE_URL "/attestation/v4/sigrl/%08x HTTP/1.1\r\nHost: " IAS_HOST_ADDRESS "\r\nOcp-Apim-Subscription-Key: %s\r\n\r\n"
+#define REPORT_REQUEST	"POST " IAS_BASE_URL "/attestation/v4/report HTTP/1.1\r\nHost: " IAS_HOST_ADDRESS "\r\nOcp-Apim-Subscription-Key: %s\r\ncontent-type: application/json\r\ncontent-length: %d\r\n\r\n%s"
 
 #define IAS_RESPONSE_MAX_LEN (32*ONE_KB)
 
@@ -76,7 +76,6 @@ const char* pse_status_strings[PSE_STRINGS_COUNT] = {
 };
 
 // use this for debugging the certificate chain, can also change the result to 1 if the root CA is not present (Google test)
-/*
 static int custom_verify_peer(int preverify_ok, X509_STORE_CTX* ctx) 
 {
 	PRINT(INFO, IAS, "custom_verify_peer called, preverify_ok=%d\n", preverify_ok);
@@ -98,7 +97,6 @@ static int custom_verify_peer(int preverify_ok, X509_STORE_CTX* ctx)
 	
 	return preverify_ok; // don't change the value, not doing any actual checks here...
 }
-*/
 
 static void print_certificate_details(X509* cert)
 {
@@ -153,6 +151,7 @@ static SSL_CTX* prepare_ssl_ctx()
 			break;
 		}
 		
+	#ifdef IAS_V3
 		// create a new memory buffer to hold the client certificate data
 		cert_bio = BIO_new_mem_buf((void*)&ledger_keys_manager.get_ledger_base_keys()->ias_certificate_str, -1); // -1 means lenght will be determined by str_len and buffer is read-only
 		if (cert_bio == NULL)
@@ -241,10 +240,11 @@ static SSL_CTX* prepare_ssl_ctx()
 			PRINT(ERROR, IAS, "X509_STORE_add_cert failed with %d\n", ret);
 			break;
 		}
+	#endif // IAS_v3
 		
 		// set verification flags for the context
-		SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL); // custom_verify_peer); // enable for debugging of the certificate chain
-		SSL_CTX_set_verify_depth(ctx, 4);
+		//SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, custom_verify_peer); // enable for debugging of the certificate chain
+		//SSL_CTX_set_verify_depth(ctx, 4);
 		
 		init_done = true;
 		
@@ -318,6 +318,8 @@ static bool connect_to_ias(ias_session_t* p_ias_session)
 		if (res != 1)
 		{
 			PRINT(ERROR, IAS, "SSL_connect failed, ret %d, error %d, errno %d\n", res, SSL_get_error(ssl, res), errno);
+      unsigned long cur_err = ERR_get_error();
+      PRINT(ERROR, IAS, "Error details (%d): %s\n", cur_err, ERR_error_string(cur_err, NULL)); 
 			break;
 		}
 		
@@ -1316,8 +1318,8 @@ static bool prepare_ias_report_request(const unsigned char* nonce_str, const sgx
 			PRINT(ERROR, IAS, "malloc failed\n");
 			break;
 		}
-			
-		snprintf(*input_buffer, input_buffer_size, REPORT_REQUEST, json_enclave_str_len, json_enclave_str); // todo - check return value
+		
+		snprintf(*input_buffer, input_buffer_size, REPORT_REQUEST, ledger_keys_manager.get_ledger_base_keys()->ias_key_str, json_enclave_str_len, json_enclave_str); // todo - check return value
 		
 		retval = true;
 		
@@ -1430,7 +1432,7 @@ bool ias_get_sigrl(ias_session_t* p_ias_session, const sgx_epid_group_id_t gid, 
 		//be_gid = SWAP_ENDIAN_DW(le_gid);
 		//PRINT(INFO, IAS, "gid: %02x%02x%02x%02x, little endian 0x%x, big endian: 0x%x\n", gid[3], gid[2], gid[1], gid[0], le_gid, be_gid);
 		
-		snprintf(input_buffer, 256, ATTEST_REQUEST, be_gid); // todo - check return value
+		snprintf(input_buffer, 256, ATTEST_REQUEST, be_gid, ledger_keys_manager.get_ledger_base_keys()->ias_key_str); // todo - check return value
 		size_t input_len = strnlen(input_buffer, 256);
 		
 		output_buffer = (char*)malloc(IAS_RESPONSE_MAX_LEN);

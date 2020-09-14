@@ -14,7 +14,7 @@
 * limitations under the License.
 */
  
-#include <sgx_tae_service.h>
+#include <sgx_key_exchange.h>
 #include <sgx_tcrypto.h>
 #include <sgx_quote.h>
 

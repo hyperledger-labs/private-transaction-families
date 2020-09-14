@@ -19,6 +19,7 @@ SET(files
     ${listener_app_dir}/listener_ocalls.cpp
     ${listener_app_dir}/rest_handler.cpp
     ${common_dir}/PrivateLedger.cpp
+    ${common_dir}/app_log.cpp
     ${main_app_dir}/Enclave_u.h
     Test_listener.cpp
 )
@@ -45,6 +46,8 @@ target_link_libraries(${PROJECT_NAME} protobuf)
 
 # Link runTests with what we want to test and the GTest library
 target_link_libraries(${PROJECT_NAME} GTest::Main)
+
+target_link_libraries(${PROJECT_NAME} log4cxx)
 
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

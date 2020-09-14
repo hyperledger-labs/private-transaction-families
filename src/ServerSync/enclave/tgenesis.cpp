@@ -33,8 +33,7 @@
 
 #include <openssl/rand.h>
 
-static char ias_cert_buffer[MAX_KEY_CERT_BLOB] = {0};
-static char ias_key_buffer[MAX_KEY_CERT_BLOB] = {0};
+static uint8_t ias_key_buffer[MAX_IAS_KEY_LEN] = {0};
 static char ias_spid_buffer[SPID_BLOB_SIZE] = {0};
 static bool certificate_set = false;
 
@@ -300,12 +299,7 @@ sgx_status_t seal_ledger_keys(char* kds_str, char* kds_sig_str)
 		}
 		ledger_base_keys.ledger_svn = sgx_report.body.isv_svn; // sgx_isv_svn_t is uint16_t
 		
-		if (safe_strncpy(ledger_base_keys.ias_certificate_str, MAX_KEY_CERT_BLOB, ias_cert_buffer, MAX_KEY_CERT_BLOB) == false)
-		{
-			PRINT(ERROR, CRYPTO, "safe_strncpy failed\n");
-			break;
-		}
-		if (safe_strncpy(ledger_base_keys.ias_key_str, MAX_KEY_CERT_BLOB, ias_key_buffer, MAX_KEY_CERT_BLOB) == false)
+		if (safe_strncpy((char*)ledger_base_keys.ias_key_str, MAX_IAS_KEY_LEN, (const char*)ias_key_buffer, MAX_IAS_KEY_LEN) == false)
 		{
 			PRINT(ERROR, CRYPTO, "safe_strncpy failed\n");
 			break;
@@ -354,8 +348,7 @@ sgx_status_t seal_ledger_keys(char* kds_str, char* kds_sig_str)
 	if (ec_key != NULL)
 		EC_KEY_free(ec_key);
 		
-	memset_s(&ias_key_buffer, MAX_KEY_CERT_BLOB, 0, MAX_KEY_CERT_BLOB);
-	memset_s(&ias_cert_buffer, MAX_KEY_CERT_BLOB, 0, MAX_KEY_CERT_BLOB);
+	memset_s(&ias_key_buffer, MAX_IAS_KEY_LEN, 0, MAX_IAS_KEY_LEN);
 	
 	memset_s(&ias_spid_buffer, SPID_BLOB_SIZE, 0, SPID_BLOB_SIZE);
 	if (spid_buf != NULL)
@@ -366,19 +359,13 @@ sgx_status_t seal_ledger_keys(char* kds_str, char* kds_sig_str)
 }
 
 
-uint32_t set_ias_data(char* cert_str, char* key_str, char* spid_str)
+uint32_t set_ias_data(char* key_str, char* spid_str)
 {
 	verify_enclave_role(ROLE_KEYS_GENESIS);
-	
-	if (strnlen(cert_str, MAX_KEY_CERT_BLOB) > MAX_KEY_CERT_BLOB - 1)
-	{
-		PRINT(ERROR, IAS, "certificate length is at least %ld, expected maximum %d\n", strnlen(cert_str, MAX_KEY_CERT_BLOB), MAX_KEY_CERT_BLOB - 1);
-		return 1;
-	}
 		
-	if (strnlen(key_str, MAX_KEY_CERT_BLOB) > MAX_KEY_CERT_BLOB - 1)
+	if (strnlen(key_str, MAX_IAS_KEY_LEN) > MAX_IAS_KEY_LEN - 1)
 	{
-		PRINT(ERROR, IAS, "certificate key length is at least %ld, expected maximum %d\n", strnlen(key_str, MAX_KEY_CERT_BLOB), MAX_KEY_CERT_BLOB - 1);
+		PRINT(ERROR, IAS, "certificate key length is at least %ld, expected maximum %d\n", strnlen(key_str, MAX_IAS_KEY_LEN), MAX_IAS_KEY_LEN - 1);
 		return 1;
 	}
 	
@@ -388,13 +375,7 @@ uint32_t set_ias_data(char* cert_str, char* key_str, char* spid_str)
 		return 1;
 	}
 	
-	if (safe_strncpy(ias_cert_buffer, MAX_KEY_CERT_BLOB, cert_str, MAX_KEY_CERT_BLOB) == false)
-	{
-		PRINT(ERROR, IAS, "safe_strncpy failed\n");
-		return 1;
-	}
-	
-	if (safe_strncpy(ias_key_buffer, MAX_KEY_CERT_BLOB, key_str, MAX_KEY_CERT_BLOB) == false)
+	if (safe_strncpy((char*)ias_key_buffer, MAX_IAS_KEY_LEN, (const char*)key_str, MAX_IAS_KEY_LEN) == false)
 	{
 		PRINT(ERROR, IAS, "safe_strncpy failed\n");
 		return 1;

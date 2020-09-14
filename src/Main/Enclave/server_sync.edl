@@ -5,7 +5,7 @@ enclave {
 
 		/* genesis phase */
 		public sgx_status_t seal_ledger_keys([in, string] char* kds_str, [in, string] char* kds_sig_str);
-		public uint32_t set_ias_data([in, string] char* cert_str, [in, string] char* key_str, [in, string] char* spid_str);
+		public uint32_t set_ias_data([in, string] char* key_str, [in, string] char* spid_str);
 
 		/* keys client side */
 		public sgx_status_t decrypt_and_seal_ledger_keys(sgx_ra_context_t context,

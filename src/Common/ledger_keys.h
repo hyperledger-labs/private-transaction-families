@@ -25,7 +25,7 @@
 #define LEDGER_ADD_STRING "Sawtooth Ledger Keys"
 #define LEDGER_ADD_STRING_LEN 20 // without trailing \0
 
-#define MAX_KEY_CERT_BLOB 4096
+#define MAX_IAS_KEY_LEN 34 // TODO:  This is not specifically noted in documentation
 #define SPID_BLOB_SIZE (sizeof(sgx_spid_t)*2+1)
 
 typedef struct _ledger_base_keys_t
@@ -49,8 +49,7 @@ typedef struct _ledger_base_keys_t
 	
 // these are for IAS communication, SPID, private certificate and private key
 	sgx_spid_t ias_spid;
-	char ias_certificate_str[MAX_KEY_CERT_BLOB];
-	char ias_key_str[MAX_KEY_CERT_BLOB];
+	uint8_t ias_key_str[MAX_IAS_KEY_LEN];
 
 } ledger_base_keys_t;
 

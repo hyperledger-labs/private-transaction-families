@@ -19,23 +19,25 @@
 
 #include "ledger_keys.h"
 
-#include <sgx_uae_service.h>
+#include <sgx_uae_epid.h>
 
 // #define VERIFY_PSE_ATTESTATION 1
 
 #define KDS_FILE	 		"genesis_files/kds.hexstr"
 #define KDS_SIG_FILE 		"genesis_files/kds_signature.hexstr"
 
+#define IAS_HOST_ADDRESS 	"api.trustedservices.intel.com" // production test server
+
 #ifdef DEBUG
 
-#define IAS_HOST_ADDRESS 	"test-as.sgx.trustedservices.intel.com" // production test server
+#define IAS_BASE_URL        "/sgx/dev"
 #define CERT_FILE 			"genesis_files/ias-test-as.crt"
 #define CERT_KEY_FILE 		"genesis_files/ias-test-as.key"
 #define SPID_FILE	 		"genesis_files/ias-test-as.spid"
 
 #else // PRODUCTION
 
-#define IAS_HOST_ADDRESS	"as.sgx.trustedservices.intel.com" // production server
+#define IAS_BASE_URL        "/sgx"
 #define CERT_FILE			"genesis_files/ias-as.crt"
 #define CERT_KEY_FILE		"genesis_files/ias-as.key"
 #define SPID_FILE	 		"genesis_files/ias-as.spid"

@@ -19,9 +19,7 @@ Install all components as explained in the [setup guide](SETUP.md)
     - ias-test-as.spid - includes the Service Provider ID you got
       from Intel Attestation Services 
       (for example 887710ADAD9321C614316EC06F277331)
-    - ias-test-as.crt - the private certificate to use when
-      communicating with IAS
-    - ias-test-as.key - the private key for the private certificate
+    - ias-test-as.key - the key provided on the IAS portal for your connections
     - kds.hexstr - the Key Derivation Secret to use for creating the private 
       ledger keys (for example 
       123456789012345678901234567890123456789012345678901234567890ABCD)
@@ -99,23 +97,14 @@ Note: The keys are unique for each system based on its hardware keys.
 You cannot copy the keys manually and therefore have to run the following 
 procedure:
 1. Register with Intel Attestation Services:
-   -  Read more about this procedure here: [https://software.intel.com/
-en-us/articles/certificate-requirements-for-intel-attestation-services](https://software.intel.com/en-us/articles/certificate-requirements-for-intel-attestation-services)
-   - For debug mode we can use the self-signed certificate and don't need CA, 
-     to create self-signed certificate: [https://software.intel.com/en-us/
-articles/how-to-create-self-signed-certificates-for-use-with-intel-sgx-
-remote-attestation-using](https://software.intel.com/en-us/articles/how-to-create-self-signed-certificates-for-use-with-intel-sgx-remote-attestation-using) (last verify stage may fail, this can be ignored)
-   - Join Intel Dev Zone: [https://software.intel.com/registration/](https://software.intel.com/registration/)
-   - Register to IAS: [https://software.intel.com/en-us/form/sgx-onboarding](https://software.intel.com/en-us/form/sgx-onboarding) (select un-linkable quote)
+   - Join the IAS portal at [https://api.portal.trustedservices.intel.com/](https://api.portal.trustedservices.intel.com/)
+   - Subscribe to the unlinkable EPID attestation service at [https://api.portal.trustedservices.intel.com/EPID-attestation](https://api.portal.trustedservices.intel.com/EPID-attestation)
 
 2. Generate the following files and place them under the genesis files folder
 (/out/genesis_files).
-   - ias-test-as.crt - the private certificate you use to communicate with the
-     IAS (generated in the previous step)
    - ias-test-as.spid - includes the Service Provider ID you got from Intel 
      Attestation Services (for example 887710ADAD9321C614316EC06F277331)
-   - ias-test-as.key - the private key for the private certificate, created 
-     in the step above
+   - ias-test-as.key - The key provided on your IAS panel
    - kds.hexstr - the Key Derivation Secret used for creating the private 
      ledger keys (for example 
      123456789012345678901234567890123456789012345678901234567890ABCD)

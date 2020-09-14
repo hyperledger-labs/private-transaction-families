@@ -19,7 +19,7 @@
 
 #include <openssl/ssl.h>
 #include <sgx_quote.h>
-#include <sgx_tae_service.h>
+#include <sgx_key_exchange.h>
 
 #include "ias.h"
 

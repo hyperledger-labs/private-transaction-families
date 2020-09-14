@@ -43,6 +43,7 @@ int server_process_request(network_packet_t* packet, const char* input_data, cha
 	if (packet->type == TYPE_RA_MSG1)
 	{
 		PRINT(INFO, SERVER, "start processing msg1\n");
+    PRINT(INFO, SERVER, "Connecting to " IAS_HOST_ADDRESS " at " IAS_HOST_PORT_STR "\n");
 		
 		// first, open a channel with IAS
 		ias_socket = client_connect_to_server(IAS_HOST_ADDRESS, IAS_HOST_PORT);

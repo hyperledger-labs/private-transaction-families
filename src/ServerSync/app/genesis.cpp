@@ -99,8 +99,6 @@ char* load_file(const char* filename, uint32_t* size)
 // todo - review this function again
 uint32_t load_ias_data()
 {
-	char* cert_str = NULL;
-	uint32_t cert_str_size = 0;
 	char* key_str = NULL;
 	uint32_t key_str_size = 0;
 	char* spid_str = NULL;
@@ -110,19 +108,7 @@ uint32_t load_ias_data()
 	uint32_t ret = -1;
 	
 	do 
-	{
-		cert_str = load_file(CERT_FILE, &cert_str_size);
-		if (cert_str == NULL)
-		{
-			PRINT(ERROR, GENESIS, "load_file %s failed\n", CERT_FILE);
-			break;
-		}
-		if (cert_str[cert_str_size-1] == '\n')
-		{
-			cert_str[cert_str_size-1] = '\0';
-			cert_str_size -= 1;
-		}
-				
+	{		
 		key_str = load_file(CERT_KEY_FILE, &key_str_size);
 		if (key_str == NULL)
 		{
@@ -147,7 +133,7 @@ uint32_t load_ias_data()
 			spid_str_size -= 1;
 		}
 
-		status = set_ias_data(eid, &ret, cert_str, key_str, spid_str);
+		status = set_ias_data(eid, &ret, key_str, spid_str);
 		if (status != SGX_SUCCESS || ret != 0)
 		{
 			PRINT(ERROR, GENESIS, "enclvae_set_certificate failed, status 0x%x, ret %d\n", status, ret);
@@ -158,11 +144,6 @@ uint32_t load_ias_data()
 		
 	} while (0);
 	
-	if (cert_str != NULL)
-	{
-		memset_s(cert_str, cert_str_size, 0 , cert_str_size);
-		free(cert_str);
-	}
 	if (key_str != NULL)
 	{
 		memset_s(key_str, key_str_size, 0 , key_str_size);

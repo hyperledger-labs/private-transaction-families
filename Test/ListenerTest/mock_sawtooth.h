@@ -50,6 +50,7 @@ class SawtoothStateMock : public sawtooth::GlobalState
     		const std::string& address) const {}
     virtual void ListAddresses(std::vector<std::string>* out_values,
     		const std::vector<std::string>& address) const {}
+    virtual void AddEvent(const std::string& event_type, const std::vector<KeyValue>& kv_pairs, const std::string& event_data) const {}
 };
 
 bool deleteAllValues()
