@@ -128,7 +128,7 @@ just run it (see instructions in the [USAGE](USAGE.md) document).
       `$ sudo apt-get install libpthread-stubs0-dev`
    - Python tools - `$ sudo apt-get install python3-setuptools`
 
-2. Clone the latest [Private-Transaction-Families](./) sources from git
+2. Clone the latest [Private-Transaction-Families](https://github.com/tzimer/private-transaction-families) sources from git
 3. Install private rest api
    - `$ cd private_rest_api/rest_api`
    - `$ ./compile_proto`
